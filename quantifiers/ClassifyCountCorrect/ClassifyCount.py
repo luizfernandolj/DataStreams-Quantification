@@ -1,6 +1,6 @@
-import sys
+"""import sys
 
-sys.path.insert(1, 'C:\\Users\\Luiz Fernando\\JupyterFiles\\Quantifier-project\\Quantifiers')
+sys.path.insert(1, 'C:\\Users\\Luiz Fernando\\JupyterFiles\\Quantifier-project\\Quantifiers')"""
 from interface_class.Quantifier import Quantifier
 
 from sklearn.neighbors import KNeighborsClassifier
