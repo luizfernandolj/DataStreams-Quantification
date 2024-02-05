@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
-from ikscode.IKSSW import IKSSW
 from quantifiers.ApplyQtfs import ApplyQtfs
 from timeit import default_timer as timer
+from sklearn.metrics import accuracy_score
 import os
 
 class DriftDetector(ABC):
@@ -12,49 +12,67 @@ class DriftDetector(ABC):
       self.size_window = size_window
       self.context_list = context_list
       
-      self.trainX = stream.iloc[:size_train, :-1]
-      self.labels = stream.iloc[:size_train, -1]
-      self.test = stream.iloc[size_train:, :-1]
+      self.trainX = stream.iloc[:size_train, :-1].copy()
+      self.labels = stream.iloc[:size_train, -1].copy()
+      self.trainy = self.labels.copy()
+      self.test = stream.iloc[size_train:, :-1].copy()
+      self.labels_test = stream.iloc[size_train:, -1].copy()
+      self.labels_test.reset_index(inplace=True, drop=True)
       self.test.reset_index(inplace=True, drop=True)
       self.model = model.fit(self.trainX, self.labels)
   
       self.tw = pd.DataFrame()
       self.twlabels = []
       self.accs = []
-      self.table = pd.DataFrame(columns=["IKS"])
+      self.table = pd.DataFrame()
       self.real_labels_window = 0
       self.vet_accs = {}
-
-      self.table_accuracies = pd.DataFrame()
     
     @abstractmethod
     def runslidingwindow(self):
         pass
 
     def apply_qtf(self, new_instance):
-      self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
-      score = self.model.predict_proba(new_instance.to_frame().T)[:, 0]
+      if len(self.tw) < self.size_window:
+        self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
+      else:
+        self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True).iloc[1:]
+        self.vet_accs[list(self.vet_accs.keys())[0]].pop(0)
+        
+      score = self.model.predict_proba(new_instance.to_frame().T)[:, 1]
       self.vet_accs[list(self.vet_accs.keys())[0]].append(self.model.predict(new_instance.to_frame().T)
                                                           .astype(int)[0])
       
-      app = ApplyQtfs(self.trainX, self.labels.values.tolist(), self.tw, self.model, 0.5)
+      app = ApplyQtfs(self.trainX, self.trainy.values.tolist(), self.tw, self.model, 0.5)
       proportions = app.aplly_qtf()
       
       for qtf, proportion in proportions.items():
-        pos_scores = self.model.predict_proba(self.tw)[:, 0].tolist()
-        thr = app.get_best_threshold(proportion, pos_scores)
+        pos_scores = self.model.predict_proba(self.tw)[:, 1].tolist()
+        thr = app.calc_threshold(proportion, pos_scores)
+        print(f"proportion:{proportion} /// thr:{thr}, score:{score}")
         if qtf not in self.vet_accs:
           self.vet_accs[qtf] = self.twlabels.copy()
         self.vet_accs[qtf].append(1 if score >= thr else 0)
-
-      self.vet_accs["real"] = self.real_labels_window
+        if len(self.vet_accs[qtf]) == self.size_window+1:   
+          self.vet_accs[qtf].pop(0)
+  
+      self.vet_accs["real"] = self.real_labels_window.tolist()
       print(pd.DataFrame(self.vet_accs))
       
 
     def get_real_proportion(self, index):
-      self.real_labels_window = self.labels.iloc[index-len(self.tw): index+1]
-      print(self.real_labels_window.value_counts(normalize=True))
+      start =  index-len(self.tw)+1 if len(self.tw) >= self.size_window else index-len(self.tw)
+      self.real_labels_window = self.labels_test.iloc[start: index+1]
+      print(self.real_labels_window.value_counts(normalize=True).tolist())
 
+    def compute_accuracies(self):
+      d = {}
+      for key, vet_acc in self.vet_accs.items():
+        d[key] = round(accuracy_score(self.real_labels_window, vet_acc), 2)
+      self.table = pd.concat([self.table, pd.DataFrame([d])])
+      self.table.drop(columns=["real"], inplace=True)
+      self.table.reset_index(inplace=True, drop=True)
+      return self.table
 
 
 
