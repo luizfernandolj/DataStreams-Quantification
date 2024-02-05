@@ -26,8 +26,11 @@ class IKS(DriftDetector):
       if len(self.tw) >= 10:
         self.get_real_proportion(index)
         self.apply_qtf(new_instance)
+        if len(self.tw) < self.size_window:
+          self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
 
         if len(self.tw) == self.size_window:
+          self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)[1:]
           print(self.compute_accuracies())
           print("================================")
           self.detect_drift(self.ca, index)

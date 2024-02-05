@@ -24,7 +24,7 @@ class ApplyQtfs:
     self.window = window
     self.model = model
     self.thr = thr
-    self.quantifiers = ["CC", "ACC", "MS", "DyS"]
+    self.quantifiers = ["CC", "ACC", "MS", "X", "MAX", "DyS"]
     self.quantifiers_initialized = {}
 
   def apply_quantifier(self, quantifier, clf, thr, measure, train, test):
@@ -115,7 +115,6 @@ class ApplyQtfs:
                                             measure='topsoe',
                                             train=[self.trainX, self.trainy],
                                             test=self.window)
-      print(pred_pos_prop)
       pred_pos_prop = round(pred_pos_prop[1], 2)# Getting the positive proportion
       proportions[qtf] = pred_pos_prop
     return proportions
