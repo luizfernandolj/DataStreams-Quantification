@@ -33,24 +33,31 @@ class DriftDetector(ABC):
         pass
 
     def apply_qtf(self, new_instance):
+      if len(self.tw) < self.size_window:
+        self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
+      else:
+        self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)[1:]
+        self.vet_accs[list(self.vet_accs.keys())[0]].pop(0)  
+      
       score = self.model.predict_proba(new_instance.to_frame().T)[:, 1]
-      if len(self.tw) == self.size_window:
-            self.vet_accs[list(self.vet_accs.keys())[0]].pop(0)  
+
       self.vet_accs[list(self.vet_accs.keys())[0]].append(self.model.predict(new_instance.to_frame().T)
                                                           .astype(int)[0])
       
       app = ApplyQtfs(self.trainX, self.trainy.values.tolist(), self.tw, self.model, 0.5)
       proportions = app.aplly_qtf()
+      print(proportions)
       
       for qtf, proportion in proportions.items():
+        name = f"{list(self.vet_accs.keys())[0]}-{qtf}"
         pos_scores = self.model.predict_proba(self.tw)[:,1].tolist()
         thr = app.calc_threshold(proportion, pos_scores)
-        #print(f"proportion:{proportion} /// thr:{thr}, score:{score}")
-        if qtf not in self.vet_accs:
-          self.vet_accs[qtf] = self.twlabels.copy()
-        self.vet_accs[qtf].append(1 if score >= thr else 0)
-        if len(self.vet_accs[qtf]) == self.size_window+1:   
-          self.vet_accs[qtf].pop(0)
+        print(f"proportion:{proportion} /// thr:{thr}, score:{score}")
+        if name not in self.vet_accs:
+          self.vet_accs[name] = self.twlabels.copy()
+        self.vet_accs[name].append(1 if score >= thr else 0)
+        if len(self.vet_accs[name]) == self.size_window+1:   
+          self.vet_accs[name].pop(0)
   
       self.vet_accs["real"] = self.real_labels_window.tolist()
       print(pd.DataFrame(self.vet_accs))
@@ -68,7 +75,7 @@ class DriftDetector(ABC):
       self.table = pd.concat([self.table, pd.DataFrame([d])])
       self.table.drop(columns=["real"], inplace=True)
       self.table.reset_index(inplace=True, drop=True)
-      return self.table.median()
+      return self.table.round(2)
 
 
 

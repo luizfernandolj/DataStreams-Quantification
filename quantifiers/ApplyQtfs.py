@@ -24,7 +24,7 @@ class ApplyQtfs:
     self.window = window
     self.model = model
     self.thr = thr
-    self.quantifiers = ["CC", "ACC", "MS", "X", "MAX", "DyS"]
+    self.quantifiers = ["CC", "ACC", "MS", "DyS"]
     self.quantifiers_initialized = {}
 
   def apply_quantifier(self, quantifier, clf, thr, measure, train, test):
