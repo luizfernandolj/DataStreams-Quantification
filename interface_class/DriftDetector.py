@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from quantifiers.ApplyQtfs import ApplyQtfs
 from timeit import default_timer as timer
 from sklearn.metrics import accuracy_score
@@ -76,6 +77,16 @@ class DriftDetector(ABC):
       self.table.drop(columns=["real"], inplace=True)
       self.table.reset_index(inplace=True, drop=True)
       return self.table.round(2)
+    
+    def plot_acc(self):
+      fig, ax = plt.subplots(figsize=(4, 2))
+      for key, accs  in self.vet_accs.items():
+        plt.plot([float(x)*self.size_window for x in range(0,len(accs))], accs, label=key )
+      ax.spines['top'].set_visible(False)
+      ax.spines['right'].set_visible(False)
+      plt.xlabel('Examples')
+      plt.ylabel('Accuracy') 
+      plt.legend()
 
 
 
