@@ -96,12 +96,12 @@ def TPRandFPR(validation_scores):
     for threshold in unique_scores:
         fp = len(validation_scores[(validation_scores['score'] > threshold) & (validation_scores['class'] == 0)])
         tp = len(validation_scores[(validation_scores['score'] > threshold) & (validation_scores['class'] == 1)])
-        tpr = round(tp / total_positive, 2) if total_positive != 0 else tp
-        fpr = round(fp / total_negative, 2) if total_negative != 0 else fp
+        tpr = round(tp / total_positive, 2)
+        fpr = round(fp / total_negative, 2)
 
         aux = pd.DataFrame([[round(threshold, 2), fpr, tpr]])
         aux.columns = ['threshold', 'fpr', 'tpr']
-        arrayOfTPRandFPRByTr = pd.concat([arrayOfTPRandFPRByTr if not arrayOfTPRandFPRByTr.empty else None, aux])
+        arrayOfTPRandFPRByTr = pd.concat([arrayOfTPRandFPRByTr, aux])
 
     arrayOfTPRandFPRByTr = arrayOfTPRandFPRByTr.reset_index(drop=True)
 

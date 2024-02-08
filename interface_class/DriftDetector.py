@@ -45,7 +45,7 @@ class DriftDetector(ABC):
       self.vet_accs[list(self.vet_accs.keys())[0]].append(self.model.predict(new_instance.to_frame().T)
                                                           .astype(int)[0])
       
-      app = ApplyQtfs(self.trainX, self.trainy.values.tolist(), self.tw, self.model, 0.5)
+      app = ApplyQtfs(self.trainX, self.trainy, self.tw, self.model, 0.5)
       proportions = app.aplly_qtf()
       print(proportions)
       
