@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from quantifiers.ApplyQtfs import ApplyQtfs
 from timeit import default_timer as timer
 from sklearn.metrics import accuracy_score
@@ -21,6 +20,7 @@ class DriftDetector(ABC):
       self.labels_test.reset_index(inplace=True, drop=True)
       self.test.reset_index(inplace=True, drop=True)
       self.model = model.fit(self.trainX, self.labels)
+      self.final_vet_accs = {}
   
       self.tw = pd.DataFrame()
       self.twlabels = []
@@ -56,9 +56,12 @@ class DriftDetector(ABC):
         print(f"proportion:{proportion} /// thr:{thr}, score:{score}")
         if name not in self.vet_accs:
           self.vet_accs[name] = self.twlabels.copy()
+          self.final_vet_accs[name] = self.twlabels.copy()
         self.vet_accs[name].append(1 if score >= thr else 0)
+        self.final_vet_accs[name].append(1 if score >= thr else 0)
         if len(self.vet_accs[name]) == self.size_window+1:   
           self.vet_accs[name].pop(0)
+          
   
       self.vet_accs["real"] = self.real_labels_window.tolist()
       print(pd.DataFrame(self.vet_accs))
@@ -77,16 +80,6 @@ class DriftDetector(ABC):
       self.table.drop(columns=["real"], inplace=True)
       self.table.reset_index(inplace=True, drop=True)
       return self.table.round(2)
-    
-    def plot_acc(self):
-      fig, ax = plt.subplots(figsize=(4, 2))
-      for key, accs  in self.vet_accs.items():
-        plt.plot([float(x)*self.size_window for x in range(0,len(accs))], accs, label=key )
-      ax.spines['top'].set_visible(False)
-      ax.spines['right'].set_visible(False)
-      plt.xlabel('Examples')
-      plt.ylabel('Accuracy') 
-      plt.legend()
 
 
 

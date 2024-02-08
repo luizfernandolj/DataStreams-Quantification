@@ -15,7 +15,7 @@ class WRS(DriftDetector):
   def runslidingwindow(self):
 
     drift_points = []
-    self.vet_accs["IKS"] = []
+    self.vet_accs["WRS"] = []
     
     w1 = self.trainX.iloc[-self.size_window:].copy()
     
@@ -38,11 +38,11 @@ class WRS(DriftDetector):
           self.detect_drift(index, n_features, w1, w2, w2_labels)
 
       else:
-        self.vet_accs["IKS"].append(self.model.predict(new_instance.to_frame().T).astype(int)[0])
-        self.twlabels = self.vet_accs["IKS"].copy()
+        self.vet_accs["WRS"].append(self.model.predict(new_instance.to_frame().T).astype(int)[0])
+        self.twlabels = self.vet_accs["WRS"].copy()
         self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
-    self.plot_acc()
-    return accuracies
+    vet_accs = pd.concat([pd.DataFrame(self.final_vet_accs), self.test], axis=1, ignore_index=True)
+    return accuracies, vet_accs 
 
 
   def detect_drift(self, index, n_features, w1, w2, w2_labels):
@@ -59,7 +59,7 @@ class WRS(DriftDetector):
       self.trainX = self.tw.copy()
       self.trainy = self.real_labels_window.copy()
       self.tw = pd.DataFrame()
-      self.vet_accs = {"IKS":[]}
+      self.vet_accs = {"WRS":[]}
       self.model.fit(self.trainX, self.trainy)  
     
 

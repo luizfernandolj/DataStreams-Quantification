@@ -36,8 +36,8 @@ class IKS(DriftDetector):
         self.vet_accs["IKS"].append(self.model.predict(new_instance.to_frame().T).astype(int)[0])
         self.twlabels = self.vet_accs["IKS"].copy()
         self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
-    self.plot_acc()
-    return accuracies
+    vet_accs = pd.concat([pd.DataFrame(self.final_vet_accs), self.test], axis=1, ignore_index=True)
+    return accuracies, vet_accs 
 
 
   def detect_drift(self, index, ca = 1.95):

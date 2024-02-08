@@ -31,7 +31,7 @@ class IBDD(DriftDetector):
   def runslidingwindow(self):
 
     drift_points = []
-    self.vet_accs["IKS"] = []
+    self.vet_accs["IBDD"] = []
     superior_threshold, inferior_threshold, nrmse = self.find_initial_threshold(self.trainX, self.size_window, self.n_runs)
     threshold_diffs = [superior_threshold - inferior_threshold]
     
@@ -54,13 +54,13 @@ class IBDD(DriftDetector):
           lastupdate, inferior_threshold, superior_threshold, threshold_diffs, nrmse = self.detect_drift(index, lastupdate, superior_threshold, inferior_threshold, threshold_diffs, nrmse)
 
       else:
-        self.vet_accs["IKS"].append(self.model.predict(new_instance.to_frame().T).astype(int)[0])
-        self.twlabels = self.vet_accs["IKS"].copy()
+        self.vet_accs["IBDD"].append(self.model.predict(new_instance.to_frame().T).astype(int)[0])
+        self.twlabels = self.vet_accs["IBDD"].copy()
         self.tw = pd.concat([self.tw, new_instance.to_frame().T], ignore_index=True)
-    self.plot_acc()
     for f in self.files2del:
       os.remove(f)
-    return accuracies
+    vet_accs = pd.concat([pd.DataFrame(self.final_vet_accs), self.test], axis=1, ignore_index=True)
+    return accuracies, pd.DataFrame(vet_accs) 
 
 
   def detect_drift(self, index, lastupdate, superior_threshold, inferior_threshold, threshold_diffs, nrmse):
@@ -78,7 +78,7 @@ class IBDD(DriftDetector):
       self.trainX = self.tw.copy()
       self.trainy = self.real_labels_window.copy()
       self.tw = pd.DataFrame()
-      self.vet_accs = {"IKS":[]}
+      self.vet_accs = {"IBDD":[]}
       self.model.fit(self.trainX, self.trainy)
       lastupdate += 1
 
@@ -90,7 +90,7 @@ class IBDD(DriftDetector):
       self.trainX = self.tw.copy()
       self.trainy = self.real_labels_window.copy()
       self.tw = pd.DataFrame()
-      self.vet_accs = {"IKS":[]}
+      self.vet_accs = {"IBDD":[]}
       self.model.fit(self.trainX, self.trainy)
       lastupdate += 1
     return lastupdate, inferior_threshold, superior_threshold, threshold_diffs, nrmse
