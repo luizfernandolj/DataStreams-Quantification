@@ -70,7 +70,6 @@ class DriftDetector(ABC):
     def get_real_proportion(self, index):
       start =  index-len(self.tw)+1 if len(self.tw) >= self.size_window else index-len(self.tw)
       self.real_labels_window = self.labels_test.iloc[start: index+1]
-      print(self.real_labels_window.value_counts(normalize=True).tolist())
 
     def compute_accuracies(self):
       d = {}

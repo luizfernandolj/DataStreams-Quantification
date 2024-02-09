@@ -29,6 +29,7 @@ class IKS(DriftDetector):
 
         if len(self.tw) == self.size_window:
           accuracies = self.compute_accuracies()
+          
           print("================================")
           self.detect_drift(index, self.ca)
 
