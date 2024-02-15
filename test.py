@@ -27,46 +27,27 @@ def run():
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)
 
     table = pd.DataFrame()
-    window_size = 300#window parameter to build the images for comparison
-    t = 2000
+    window_size = 11#window parameter to build the images for comparison
     table
 
     vet_accs = {}
     for i, files in enumerate(zip(files_train, files_test)):
         contexts = files[1].iloc[:, -1]
-        stream = pd.concat([files[0], files[1]], ignore_index=True)
-        stream = stream.iloc[:, :-1]
-        stream.iloc[:, -1].replace(2, int(0), inplace=True)
+        train = files[0].iloc[:, :-1]
+        test = files[1].iloc[:, :-1]
+        train.iloc[:, -1].replace(2, int(0), inplace=True)
+        test.iloc[:, -1].replace(2, int(0), inplace=True)
 
         print(f"dataset: {datasets[i]}")
         row = pd.DataFrame()
         vet_accs_table = pd.DataFrame()
         row["dataset"] = [datasets[i]]
-        
-        
-        epsilon = 3
-        ibdd = IBDD(stream, t, window_size, clf, contexts, epsilon)
-        accs1, final_accs1 = ibdd.runslidingwindow()
-        row = pd.concat([row, pd.DataFrame([accs1.mean().to_dict()])], axis=1)
-        vet_accs_table = pd.concat([vet_accs_table, final_accs1], axis=1)
 
 
         threshold = 1.90
-        iks = IKS(stream, t, window_size, clf, contexts, threshold)
-        accs2, final_accs2 = iks.runslidingwindow()
-        row = pd.concat([row, pd.DataFrame([accs2.mean().to_dict()])], axis=1)
-        vet_accs_table = pd.concat([vet_accs_table, final_accs2], axis=1)
-
-
-        threshold = 0.001
-        wrs = WRS(stream, t, window_size, clf, contexts, threshold)
-        accs3, final_accs3 = wrs.runslidingwindow()
-        row = pd.concat([row, pd.DataFrame([accs3.mean().to_dict()])], axis=1)
-        vet_accs_table = pd.concat([vet_accs_table, final_accs3], axis=1)
-
-        vet_accs_table.to_csv(f"{path}/{datasets[i]}")
-        table = pd.concat([table, row], ignore_index=True)
-        table.to_csv(f"{path}/Table_accs")
+        iks = IKS(train, test, window_size, clf, threshold)
+        vet_accs, drift_points, window_proportions = iks.run_sliding_window()
+        vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
      
     
 if __name__ == "__main__":

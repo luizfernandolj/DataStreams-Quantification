@@ -1,4 +1,4 @@
-from interface_class.DriftDetector import DriftDetector
+from interface_class.DriftDetectorBackup import DriftDetector
 
 import os
 import pandas as pd
