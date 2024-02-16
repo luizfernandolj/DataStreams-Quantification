@@ -84,6 +84,7 @@ class IKS(DriftDetector):
             if len(self.tw) == self.size_window:
                 is_drift = self.detect_drift(self.ca)
                 if is_drift:
+                    print('drift')
                     drift_points.append(i)
                     
                     self.ikssw.Update()

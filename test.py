@@ -10,10 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def run():
-    #path = "C:/Users/luiz_/Projects/DataStreams/DataStreams-Quantification/Tables"
-    #path_test = "C:/Users/luiz_/Projects/DataStreams/DataStreams-Quantification/datasets/test"
-    #path_train = "C:/Users/luiz_/Projects/DataStreams/DataStreams-Quantification/datasets/training"
-    path = f"{os.getcwd()}/Tables"
+    path = f"{os.getcwd()}/tables"
     path_test = f"{os.getcwd()}/datasets/test"
     path_train = f"{os.getcwd()}/datasets/training"
 
@@ -27,27 +24,59 @@ def run():
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)
 
     table = pd.DataFrame()
-    window_size = 11#window parameter to build the images for comparison
+    window_size = 1000 #window parameter to build the images for comparison
     table
 
     vet_accs = {}
     for i, files in enumerate(zip(files_train, files_test)):
-        contexts = files[1].iloc[:, -1]
+        
+        # taking the context 
+        contexts = files[1].iloc[:, -1].tolist()
+        contexts = [1 if contexts[i-1] != x else 0 for i, x in enumerate(contexts) ]
+        real_drifts = [i for i, x in enumerate(contexts) if x == 1]
+        
+        # creating train, test datastreams
         train = files[0].iloc[:, :-1]
         test = files[1].iloc[:, :-1]
         train.iloc[:, -1].replace(2, int(0), inplace=True)
         test.iloc[:, -1].replace(2, int(0), inplace=True)
 
         print(f"dataset: {datasets[i]}")
-        row = pd.DataFrame()
         vet_accs_table = pd.DataFrame()
-        row["dataset"] = [datasets[i]]
+        prop_win = {}
 
-
+        #IKS RUN
         threshold = 1.90
         iks = IKS(train, test, window_size, clf, threshold)
         vet_accs, drift_points, window_proportions = iks.run_sliding_window()
         vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+        drift_points_iks = [1 if x in drift_points else 0 for x in range(len(contexts))]
+        prop_win["IKS"] = window_proportions
+        
+        #IBDD RUN
+        epsilon = 3
+        ibdd = IBDD(train, test, window_size, clf, epsilon)
+        vet_accs, drift_points, window_proportions = ibdd.run_sliding_window()
+        vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+        drift_points_ibdd = [1 if x in drift_points else 0 for x in range(len(contexts))]
+        prop_win["IBDD"] = window_proportions
+        
+        #WRS RUN
+        threshold = 0.001
+        wrs = WRS(train, test, window_size, clf, epsilon)
+        vet_accs, drift_points, window_proportions = wrs.run_sliding_window()
+        vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+        drift_points_wrs = [1 if x in drift_points else 0 for x in range(len(contexts))]
+        prop_win["WRS"] = window_proportions
+        
+        
+        drift_table = pd.DataFrame({"IKS":drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})
+        prop_win_table = pd.DataFrame(prop_win)
+        
+        # Saving the dataframes into files for each dataset
+        prop_win_table.to_csv(f"{path}/{datasets[i]}-prop.csv", index=False)
+        drift_table.to_csv(f"{path}/{datasets[i]}-drift.csv", index=False)
+        vet_accs_table.to_csv(f"{path}/{datasets[i]}-pred.csv", index=False)
      
     
 if __name__ == "__main__":
