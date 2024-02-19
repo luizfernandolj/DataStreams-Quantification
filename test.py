@@ -24,7 +24,7 @@ def run():
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)
 
     table = pd.DataFrame()
-    window_size = 520 #window parameter to build the images for comparison
+    window_size = 11 #window parameter to build the images for comparison
     table
 
     vet_accs = {}

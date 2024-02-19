@@ -89,7 +89,8 @@ class IKS(DriftDetector):
                     drift_points.append(i)
                     
                     self.ikssw.Update()
-                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
+                    self.train = self.tw.copy(deep=True)
+                    self.train["class"] = self.tw_labels
                     self.tw = pd.DataFrame()
                     self.tw_labels = []
                     self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])

@@ -113,7 +113,7 @@ class DriftDetector(ABC):
         the current instance of the datastream to be putted into the window and window labels
     """
     self.tw = pd.concat([self.tw, new_instance.iloc[:-1].to_frame().T], ignore_index=True)
-    self.tw_labels.append(new_instance.iloc[-1])
+    self.tw_labels.append(int(new_instance.iloc[-1]))
     if len(self.tw) == self.size_window+1:
       self.tw = self.tw[1:]
       self.tw_labels = self.tw_labels[1:]

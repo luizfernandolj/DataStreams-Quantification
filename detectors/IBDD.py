@@ -118,15 +118,16 @@ class IBDD(DriftDetector):
                 w2 = self.get_imgdistribution("w2.jpeg", self.tw.copy())
                 self.nrmse.append(mean_squared_error(w1, w2))
                 
-                is_drift = self.detect_drift(i)
+                is_drift = 1 if i == 15 else 0
+                #is_drift = self.detect_drift(i)
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
-                    print(self.tw_labels)
-                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
+                    self.train = self.tw.copy(deep=True)
+                    self.train["class"] = self.tw_labels
+                    self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
                     self.tw = pd.DataFrame()
                     self.tw_labels = []
-                    self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
 
         else:
             vet_accs["IBDD"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])

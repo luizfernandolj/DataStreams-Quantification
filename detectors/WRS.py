@@ -94,8 +94,8 @@ class WRS(DriftDetector):
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
-
-                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
+                    self.train = self.tw.copy(deep=True)
+                    self.train["class"] = self.tw_labels
                     self.tw = pd.DataFrame()
                     self.tw_labels = []
                     self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
