@@ -72,7 +72,7 @@ class IKS(DriftDetector):
     vet_accs : dict[str:list[int]] = {"IKS": []}
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i, len(self.test), drift_points), end='\r')
+        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window
@@ -83,19 +83,21 @@ class IKS(DriftDetector):
 
             if len(self.tw) == self.size_window:
                 is_drift = self.detect_drift(self.ca)
+                print(self.ikssw.KS())
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
                     
                     self.ikssw.Update()
-                    self.train = self.test.iloc[i-len(self.tw):i+1, :]
+                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
                     self.tw = pd.DataFrame()
+                    self.tw_labels = []
                     self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
 
         else:
             vet_accs["IKS"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
         
-    vet_accs = pd.concat([pd.DataFrame(self.vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
+    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"IKS": drift_points}
     return vet_accs, drift_points, self.tw_proportions
 
@@ -115,8 +117,7 @@ class IKS(DriftDetector):
     bool : bool
          in case that the statistical test negates the null hypothesis, returns True, other case, False
     """
-    is_drift = self.ikssw.Test(ca)
-    return True if is_drift else False
+    return self.ikssw.Test(ca)
     
 
 

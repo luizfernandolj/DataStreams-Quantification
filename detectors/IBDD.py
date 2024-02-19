@@ -1,4 +1,4 @@
-from interface_class.DriftDetectorBackup import DriftDetector
+from interface_class.DriftDetector import DriftDetector
 
 import os
 import pandas as pd
@@ -73,8 +73,8 @@ class IBDD(DriftDetector):
     self.lastupdate = 0
     self.inferior_threshold = 0
     self.superior_threshold = 0
-    self.threshold_diffs = 0
-    self.nrmse = 0
+    self.threshold_diffs = []
+    self.nrmse = []
     self.n_runs = 20
     self.consecutive_values = consecutive_values
     self.files2del = ['w1.jpeg', 'w2.jpeg', 'w1_cv.jpeg', 'w2_cv.jpeg']
@@ -96,7 +96,7 @@ class IBDD(DriftDetector):
     vet_accs : dict[str:list[int]] = {"IBDD": []}
     
     
-    self.superior_threshold, self.inferior_threshold, self.nrmse = self.find_initial_threshold(self.train.iloc[:, :-1], 
+    self.superior_threshold, self.inferior_threshold, self.nrmse = self.find_initial_threshold(self.train.iloc[:, :-1].copy(), 
                                                                                                self.size_window, 
                                                                                                self.n_runs)
     threshold_diffs = [self.superior_threshold - self.inferior_threshold]
@@ -105,7 +105,7 @@ class IBDD(DriftDetector):
     lastupdate = 0
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i, len(self.test), drift_points), end='\r')
+        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window
@@ -115,16 +115,17 @@ class IBDD(DriftDetector):
 
             if len(self.tw) == self.size_window:
               
-                w2 = self.get_imgdistribution("w2.jpeg", self.tw)
+                w2 = self.get_imgdistribution("w2.jpeg", self.tw.copy())
                 self.nrmse.append(mean_squared_error(w1, w2))
                 
                 is_drift = self.detect_drift(i)
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
-
-                    self.train = self.test.iloc[i-len(self.tw):i+1, :]
+                    print(self.tw_labels)
+                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
                     self.tw = pd.DataFrame()
+                    self.tw_labels = []
                     self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
 
         else:
@@ -133,7 +134,7 @@ class IBDD(DriftDetector):
     for f in self.files2del:
       os.remove(f)    
         
-    vet_accs = pd.concat([pd.DataFrame(self.vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
+    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"IBDD": drift_points}
     return vet_accs, drift_points, self.tw_proportions
 

@@ -112,8 +112,8 @@ class DriftDetector(ABC):
     new_instance : object
         the current instance of the datastream to be putted into the window and window labels
     """
-    self.tw = pd.concat([self.tw, new_instance.to_frame().T.iloc[:, :-1]], ignore_index=True)
-    self.tw_labels.append(new_instance.to_frame().T.iloc[:, -1])
+    self.tw = pd.concat([self.tw, new_instance.iloc[:-1].to_frame().T], ignore_index=True)
+    self.tw_labels.append(new_instance.iloc[-1])
     if len(self.tw) == self.size_window+1:
       self.tw = self.tw[1:]
       self.tw_labels = self.tw_labels[1:]
@@ -142,18 +142,20 @@ class DriftDetector(ABC):
     app = ApplyQtfs(self.train.iloc[:, :-1], self.train.iloc[:, -1], self.tw, self.model, 0.5)
     proportions = app.aplly_qtf() # getting the proportions of each quantifier
     
-    
     for qtf, proportion in proportions.items():
         name = f"{first_key}-{qtf}"
         
         pos_scores = self.model.predict_proba(self.tw)[:,1].tolist() # predicting the 'probabilities' of the window
         thr = app.calc_threshold(proportion, pos_scores) # getting the threshold using the positive proportion
+        #print(f"qtf{name} - proportion{proportion} - threshold{thr}")
         if name not in vet_accs:
-          vet_accs[name] = vet_accs[first_key].copy()
+          vet_accs[name] = []
+        if len(self.tw) == 10:
+            vet_accs[name].extend(vet_accs[first_key][-9:])
         vet_accs[name].append(1 if score >= thr else 0)
         # Adding the predicted instance to the first key of the dictionary, which is the predict classes without quantification
-    vet_accs[first_key].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0]) 
-    print(pd.DataFrame(vet_accs))
+    vet_accs[first_key].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
+    print(pd.DataFrame(vet_accs)) 
     
     return vet_accs
   

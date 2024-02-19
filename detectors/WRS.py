@@ -1,4 +1,4 @@
-from interface_class.DriftDetectorBackup import DriftDetector
+from interface_class.DriftDetector import DriftDetector
 
 import pandas as pd
 import numpy as np
@@ -78,7 +78,7 @@ class WRS(DriftDetector):
     w1 = self.train.iloc[-self.size_window:, :-1].copy()
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i, len(self.test), drift_points), end='\r')
+        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window
@@ -95,14 +95,15 @@ class WRS(DriftDetector):
                     print('drift')
                     drift_points.append(i)
 
-                    self.train = self.test.iloc[i-len(self.tw):i+1, :]
+                    self.train = pd.concat([self.tw, pd.DataFrame(self.tw_labels)], axis=1)
                     self.tw = pd.DataFrame()
+                    self.tw_labels = []
                     self.model.fit(self.train.iloc[:, :-1], self.train.iloc[:, -1])
 
         else:
             vet_accs["WRS"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
     
-    vet_accs = pd.concat([pd.DataFrame(self.vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
+    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"WRS": drift_points}
     return vet_accs, drift_points, self.tw_proportions
 

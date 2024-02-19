@@ -24,7 +24,7 @@ def run():
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)
 
     table = pd.DataFrame()
-    window_size = 1000 #window parameter to build the images for comparison
+    window_size = 520 #window parameter to build the images for comparison
     table
 
     vet_accs = {}
@@ -44,26 +44,26 @@ def run():
         print(f"dataset: {datasets[i]}")
         vet_accs_table = pd.DataFrame()
         prop_win = {}
-
-        #IKS RUN
-        threshold = 1.90
-        iks = IKS(train, test, window_size, clf, threshold)
-        vet_accs, drift_points, window_proportions = iks.run_sliding_window()
-        vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
-        drift_points_iks = [1 if x in drift_points else 0 for x in range(len(contexts))]
-        prop_win["IKS"] = window_proportions
         
-        #IBDD RUN
+                #IBDD RUN
         epsilon = 3
         ibdd = IBDD(train, test, window_size, clf, epsilon)
         vet_accs, drift_points, window_proportions = ibdd.run_sliding_window()
         vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
         drift_points_ibdd = [1 if x in drift_points else 0 for x in range(len(contexts))]
         prop_win["IBDD"] = window_proportions
+
+        #IKS RUN
+        ca = 1.90
+        iks = IKS(train, test, window_size, clf, ca)
+        vet_accs, drift_points, window_proportions = iks.run_sliding_window()
+        vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+        drift_points_iks = [1 if x in drift_points else 0 for x in range(len(contexts))]
+        prop_win["IKS"] = window_proportions
         
         #WRS RUN
         threshold = 0.001
-        wrs = WRS(train, test, window_size, clf, epsilon)
+        wrs = WRS(train, test, window_size, clf, threshold)
         vet_accs, drift_points, window_proportions = wrs.run_sliding_window()
         vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
         drift_points_wrs = [1 if x in drift_points else 0 for x in range(len(contexts))]
@@ -72,6 +72,7 @@ def run():
         
         drift_table = pd.DataFrame({"IKS":drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})
         prop_win_table = pd.DataFrame(prop_win)
+        vet_accs_table = pd.concat([vet_accs_table, test.iloc[:, -1]], ignore_index=True)
         
         # Saving the dataframes into files for each dataset
         prop_win_table.to_csv(f"{path}/{datasets[i]}-prop.csv", index=False)
