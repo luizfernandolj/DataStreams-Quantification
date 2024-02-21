@@ -114,12 +114,12 @@ class IBDD(DriftDetector):
             vet_accs = self.apply_quantification(new_instance, vet_accs)
 
             if len(self.tw) == self.size_window:
-              
+                self.append_proportion()
+                
                 w2 = self.get_imgdistribution("w2.jpeg", self.tw.copy())
                 self.nrmse.append(mean_squared_error(w1, w2))
                 
-                is_drift = 1 if i == 15 else 0
-                #is_drift = self.detect_drift(i)
+                is_drift = self.detect_drift(i)
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
@@ -135,9 +135,8 @@ class IBDD(DriftDetector):
     for f in self.files2del:
       os.remove(f)    
         
-    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"IBDD": drift_points}
-    return vet_accs, drift_points, self.tw_proportions
+    return pd.DataFrame(vet_accs), drift_points, self.tw_proportions
 
 
   def detect_drift(self, index : int) -> bool:

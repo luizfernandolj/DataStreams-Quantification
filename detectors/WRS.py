@@ -87,6 +87,8 @@ class WRS(DriftDetector):
             vet_accs = self.apply_quantification(new_instance, vet_accs)
 
             if len(self.tw) == self.size_window:
+                self.append_proportion()
+                
                 w2 = self.tw.copy()
                 _, n_features = self.tw.shape
                 
@@ -103,9 +105,8 @@ class WRS(DriftDetector):
         else:
             vet_accs["WRS"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
     
-    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"WRS": drift_points}
-    return vet_accs, drift_points, self.tw_proportions
+    return pd.DataFrame(vet_accs), drift_points, self.tw_proportions
 
 
   def detect_drift(self, n_features : int, w1 : object, w2 : object) -> bool:

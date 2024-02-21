@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import json
 from sklearn.ensemble import RandomForestClassifier
 from detectors.IKS import IKS
 from detectors.IBDD import IBDD
@@ -24,7 +25,7 @@ def run():
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)
 
     table = pd.DataFrame()
-    window_size = 11 #window parameter to build the images for comparison
+    window_size = 520 #window parameter to build the images for comparison
     table
 
     vet_accs = {}
@@ -32,6 +33,7 @@ def run():
         
         # taking the context 
         contexts = files[1].iloc[:, -1].tolist()
+        print(contexts)
         contexts = [1 if contexts[i-1] != x else 0 for i, x in enumerate(contexts) ]
         real_drifts = [i for i, x in enumerate(contexts) if x == 1]
         
@@ -49,6 +51,7 @@ def run():
         epsilon = 3
         ibdd = IBDD(train, test, window_size, clf, epsilon)
         vet_accs, drift_points, window_proportions = ibdd.run_sliding_window()
+        print(drift_points)
         vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
         drift_points_ibdd = [1 if x in drift_points else 0 for x in range(len(contexts))]
         prop_win["IBDD"] = window_proportions
@@ -71,11 +74,14 @@ def run():
         
         
         drift_table = pd.DataFrame({"IKS":drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})
-        prop_win_table = pd.DataFrame(prop_win)
-        vet_accs_table = pd.concat([vet_accs_table, test.iloc[:, -1]], ignore_index=True)
+        vet_accs_table["real"] = test.iloc[:, -1].tolist()
+        
+        
+        # Saving te dictionary into a new file
+        with open(f"{path}/{datasets[i]}-prop.json", 'w') as f:
+            json.dump(prop_win, f)
         
         # Saving the dataframes into files for each dataset
-        prop_win_table.to_csv(f"{path}/{datasets[i]}-prop.csv", index=False)
         drift_table.to_csv(f"{path}/{datasets[i]}-drift.csv", index=False)
         vet_accs_table.to_csv(f"{path}/{datasets[i]}-pred.csv", index=False)
      

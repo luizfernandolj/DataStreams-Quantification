@@ -83,7 +83,7 @@ class IKS(DriftDetector):
 
             if len(self.tw) == self.size_window:
                 is_drift = self.detect_drift(self.ca)
-                print(self.ikssw.KS())
+                self.append_proportion()
                 if is_drift:
                     print('drift')
                     drift_points.append(i)
@@ -98,9 +98,8 @@ class IKS(DriftDetector):
         else:
             vet_accs["IKS"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
         
-    vet_accs = pd.concat([pd.DataFrame(vet_accs), self.test.iloc[:, -1]], axis=1, ignore_index=True)
     drift_points = {"IKS": drift_points}
-    return vet_accs, drift_points, self.tw_proportions
+    return pd.DataFrame(vet_accs), drift_points, self.tw_proportions
 
 
   def detect_drift(self, ca : float = 1.95) -> bool:
