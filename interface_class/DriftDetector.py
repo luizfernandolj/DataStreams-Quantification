@@ -98,7 +98,7 @@ class DriftDetector(ABC):
     """
     if len(self.tw) == self.size_window:
       total_size : int = len(self.tw_labels)
-      pos_prop : float = round(total_size / sum(self.tw_labels), 2) # computing positive class proportion
+      pos_prop : float = round(sum(self.tw_labels) / total_size, 2)  # computing positive class proportion
       self.tw_proportions.append(pos_prop)
       
       
@@ -155,7 +155,6 @@ class DriftDetector(ABC):
         vet_accs[name].append(1 if score >= thr else 0)
         # Adding the predicted instance to the first key of the dictionary, which is the predict classes without quantification
     vet_accs[first_key].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
-    print(pd.DataFrame(vet_accs)) 
     
     return vet_accs
   

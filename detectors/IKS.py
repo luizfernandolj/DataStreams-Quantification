@@ -85,7 +85,6 @@ class IKS(DriftDetector):
                 is_drift = self.detect_drift(self.ca)
                 self.append_proportion()
                 if is_drift:
-                    print('drift')
                     drift_points.append(i)
                     
                     self.ikssw.Update()

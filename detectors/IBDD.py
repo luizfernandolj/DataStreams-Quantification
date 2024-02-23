@@ -48,7 +48,7 @@ class IBDD(DriftDetector):
   """
   
 
-  def __init__(self, train, test, size_window, model, consecutive_values):
+  def __init__(self, train, test, size_window, model, consecutive_values, ibdd_dir):
     """
     Construct all the necessacy attributes for the class IKS
 
@@ -77,6 +77,7 @@ class IBDD(DriftDetector):
     self.nrmse = []
     self.n_runs = 20
     self.consecutive_values = consecutive_values
+    self.ibdd_dir = ibdd_dir
     self.files2del = ['w1.jpeg', 'w2.jpeg', 'w1_cv.jpeg', 'w2_cv.jpeg']
 
   def run_sliding_window(self) -> list:
@@ -121,7 +122,6 @@ class IBDD(DriftDetector):
                 
                 is_drift = self.detect_drift(i)
                 if is_drift:
-                    print('drift')
                     drift_points.append(i)
                     self.train = self.tw.copy(deep=True)
                     self.train["class"] = self.tw_labels
@@ -133,7 +133,7 @@ class IBDD(DriftDetector):
             vet_accs["IBDD"].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
         
     for f in self.files2del:
-      os.remove(f)    
+      os.remove(f"{self.ibdd_dir}/{f}")    
         
     drift_points = {"IBDD": drift_points}
     return pd.DataFrame(vet_accs), drift_points, self.tw_proportions
@@ -236,6 +236,6 @@ class IBDD(DriftDetector):
     w : object
         the image of distributions
     """
-    plt.imsave(name_file, data.transpose(), cmap = 'Greys', dpi=100)
+    plt.imsave(f"{self.ibdd_dir}/{name_file}", data.transpose(), cmap = 'Greys', dpi=100)
     w = imread(name_file)
     return w

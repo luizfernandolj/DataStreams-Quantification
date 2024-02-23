@@ -94,7 +94,6 @@ class WRS(DriftDetector):
                 
                 is_drift = self.detect_drift(n_features, w1, w2)
                 if is_drift:
-                    print('drift')
                     drift_points.append(i)
                     self.train = self.tw.copy(deep=True)
                     self.train["class"] = self.tw_labels
