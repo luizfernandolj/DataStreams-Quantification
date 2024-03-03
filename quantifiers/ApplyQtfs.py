@@ -122,19 +122,40 @@ class ApplyQtfs:
 
 
     
-  def calc_threshold(self, pos_prop, probabilities):
+  def calc_threshold(self, pos_prop, pos_scores):
     # Organiza a lista de probabilidades em ordem crescente
-    ordered_probabilities = sorted(probabilities, reverse=True)
+    ordered_pos_scores = sorted(pos_scores, reverse=True)
     
-    cut = int(len(ordered_probabilities) * pos_prop)
+    cut = int(len(ordered_pos_scores) * pos_prop)
         
-    if cut == len(ordered_probabilities):
-      threshold = ordered_probabilities[-1]
+    if cut == len(ordered_pos_scores):
+      threshold = ordered_pos_scores[-1]
     else:
       # Obtém o valor do threshold para a classe atual
-      threshold = ordered_probabilities[cut]
+      threshold = ordered_pos_scores[cut]
     # Armazena o threshold no dicionário
     return threshold
+  
+  
+  def get_best_threshold(self, pos_prop, pos_scores, thr=0.5, tolerance=0.01):
+    min = 0.0
+    max = 1.0
+    max_iteration = math.ceil(math.log2(len(pos_scores))) * 2 + 10
+    for _ in range(max_iteration):
+        new_proportion = sum(1 for score in pos_scores if score > thr) / len(pos_scores)
+        if abs(new_proportion - pos_prop) < tolerance:
+            return thr
+
+        elif new_proportion > pos_prop:
+            min = thr
+            thr = (thr + max) / 2
+
+        else:
+            max = thr
+            thr = (thr + min) / 2
+
+    return thr
+  
 
 
 

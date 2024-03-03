@@ -78,7 +78,7 @@ class WRS(DriftDetector):
     w1 = self.train.iloc[-self.size_window:, :-1].copy()
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
+        print('WRS -> Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window

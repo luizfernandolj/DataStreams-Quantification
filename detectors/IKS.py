@@ -72,7 +72,7 @@ class IKS(DriftDetector):
     vet_accs : dict[str:list[int]] = {"IKS": []}
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
+        print('IKS -> Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window

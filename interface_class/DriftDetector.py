@@ -146,7 +146,7 @@ class DriftDetector(ABC):
         name = f"{first_key}-{qtf}"
         
         pos_scores = self.model.predict_proba(self.tw)[:,1].tolist() # predicting the 'probabilities' of the window
-        thr = app.calc_threshold(proportion, pos_scores) # getting the threshold using the positive proportion
+        thr = app.get_best_threshold(proportion, pos_scores) # getting the threshold using the positive proportion
         #print(f"qtf{name} - proportion{proportion} - threshold{thr}")
         if name not in vet_accs:
           vet_accs[name] = []

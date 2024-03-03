@@ -106,7 +106,7 @@ class IBDD(DriftDetector):
     lastupdate = 0
     
     for i in range(len(self.test)):
-        print('Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
+        print('IBDD -> Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
         new_instance = self.test.loc[i]
         
         self.add_instance(new_instance) # incrementing one instance at window
@@ -237,5 +237,5 @@ class IBDD(DriftDetector):
         the image of distributions
     """
     plt.imsave(f"{self.ibdd_dir}/{name_file}", data.transpose(), cmap = 'Greys', dpi=100)
-    w = imread(name_file)
+    w = imread(f"{self.ibdd_dir}/{name_file}")
     return w
