@@ -19,7 +19,7 @@ def run(dataset, window_size):
     ibdd_dir = f"{os.getcwd()}/ibdd_files/{dataset}"
     os.mkdir(ibdd_dir)
 
-    test = pd.read_csv(f"{path_test}.test.data")
+    test = pd.read_csv(f"{path_test}.test.csv")
     train = pd.read_csv(f"{path_train}.train.data")
 
     clf = RandomForestClassifier(n_estimators=200, n_jobs=-1)

@@ -17,8 +17,10 @@ def prediction_analysis(vet_pred, window_size):
     df = pd.read_csv(f"{path}/tables/{vet_pred}")
     true_labels = df.iloc[:, -1].tolist()
     df.drop("real", axis=1, inplace=True)
-    df = df[['IBDD', 'IBDD-DyS', 'IKS', 'IKS-DyS', 'WRS', 'WRS-DyS']]
+    df = df[['IBDD-DyS', 'IKS-DyS', 'WRS-DyS', 'IBDD','IKS', 'WRS']]
     len_df = len(df)
+    
+    print(df)
     
     vet_acc = {}
     for c in df.columns:
@@ -28,7 +30,6 @@ def prediction_analysis(vet_pred, window_size):
             mean_acc.append(acc) 
         vet_acc[c] = mean_acc
     vet_acc = pd.DataFrame(vet_acc)
-    print(vet_acc)
     return vet_acc, len_df
     
 def proportion_analysis(prop_win: dict):
@@ -41,7 +42,6 @@ def proportion_analysis(prop_win: dict):
     return list(proportion_window.values())[0]
         
 def plot(vet_acc, prop, window_size, dataset):
-    print(prop)
     palette = sns.color_palette("bright", 6)
     img = sns.lineplot(vet_acc, dashes=False, markers=True, palette=palette)
     img.set_xticklabels([int(x)*int(window_size/2) for x in range(1, len(vet_acc)*2)])
@@ -53,11 +53,12 @@ def plot(vet_acc, prop, window_size, dataset):
     
     
 for i, dataset in enumerate(datasets):
+    print(datasets)
     vet_drift, vet_pred, prop_win = list(filter(lambda x: dataset in x, f))
     
     
     print("Proportion analysis...\n")
-    props = proportion_analysis(prop_win)
+    props = []#proportion_analysis(prop_win)
     
     print("Prediction Analysis...\n")
     vet_acc, len_df = prediction_analysis(vet_pred, window_size[i])

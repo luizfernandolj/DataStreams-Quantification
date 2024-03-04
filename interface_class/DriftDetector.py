@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
+#import pdb
 from quantifiers.ApplyQtfs import ApplyQtfs
 from timeit import default_timer as timer
 from sklearn.metrics import accuracy_score
@@ -146,8 +147,10 @@ class DriftDetector(ABC):
         name = f"{first_key}-{qtf}"
         
         pos_scores = self.model.predict_proba(self.tw)[:,1].tolist() # predicting the 'probabilities' of the window
-        thr = app.get_best_threshold(proportion, pos_scores) # getting the threshold using the positive proportion
-        #print(f"qtf{name} - proportion{proportion} - threshold{thr}")
+        pos_scores.append(score)
+    
+        thr = app.get_best_threshold(1-proportion, pos_scores) # getting the threshold using the positive proportion
+        print(f"qtf{name} - proportion{1-proportion} - threshold{thr}")
         if name not in vet_accs:
           vet_accs[name] = []
         if len(self.tw) == 10:
