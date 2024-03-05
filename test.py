@@ -17,6 +17,7 @@ def run(dataset, window_size):
     path_train = f"{os.getcwd()}/datasets/training/{dataset}"
     
     ibdd_dir = f"{os.getcwd()}/ibdd_files/{dataset}"
+      
     os.mkdir(ibdd_dir)
 
     test = pd.read_csv(f"{path_test}.test.csv")
@@ -48,6 +49,7 @@ def run(dataset, window_size):
     vet_accs, drift_points, window_proportions = ibdd.run_sliding_window()
     vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
     drift_points_ibdd = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
+    
     prop_win["IBDD"] = window_proportions
 
     #IKS RUN

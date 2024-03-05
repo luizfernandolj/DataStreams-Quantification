@@ -134,7 +134,7 @@ class ApplyQtfs:
       # Obtém o valor do threshold para a classe atual
       threshold = ordered_pos_scores[cut]
     # Armazena o threshold no dicionário
-    return threshold
+    return round(threshold, 3)
   
   
   def get_best_threshold(self, pos_prop, pos_scores, thr=0.5, tolerance=0.01):

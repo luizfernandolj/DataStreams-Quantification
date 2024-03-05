@@ -79,7 +79,7 @@ class WRS(DriftDetector):
     
     for i in range(len(self.test)):
         print('WRS -> Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
-        new_instance = self.test.loc[i]
+        new_instance = self.test.iloc[i, :]
         
         self.add_instance(new_instance) # incrementing one instance at window
         

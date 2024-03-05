@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
-#import pdb
+import pdb
 from quantifiers.ApplyQtfs import ApplyQtfs
 from timeit import default_timer as timer
 from sklearn.metrics import accuracy_score
@@ -137,20 +137,28 @@ class DriftDetector(ABC):
         dictionary of the predicted classes predicted by the model, with the predicted classes applying quantification (after applying quantification into that new instance)
     """
     first_key = list(vet_accs.keys())[0]
-    score = self.model.predict_proba(new_instance.to_frame().T.iloc[:, :-1])[:, 1]
+    score = self.model.predict_proba(new_instance.to_frame().T.iloc[:, :-1])[:, 1][0]
+    
+    window = pd.concat([self.tw, new_instance.iloc[:-1].to_frame().T], ignore_index=True)
     
     #                 trainX                     trainy              window  classifier  threshold        
-    app = ApplyQtfs(self.train.iloc[:, :-1], self.train.iloc[:, -1], self.tw, self.model, 0.5)
+    app = ApplyQtfs(self.train.iloc[:, :-1], self.train.iloc[:, -1], window, self.model, 0.5)
     proportions = app.aplly_qtf() # getting the proportions of each quantifier
+    
+    pos_scores = self.model.predict_proba(self.tw)[:,1].tolist() # predicting the 'probabilities' of the window
+    
+    labels = self.tw_labels.copy()
+    labels.append(int(new_instance.iloc[-1]))
+    print(labels)
+    pos_scores.append(score)
+    print(pos_scores)
     
     for qtf, proportion in proportions.items():
         name = f"{first_key}-{qtf}"
-        
-        pos_scores = self.model.predict_proba(self.tw)[:,1].tolist() # predicting the 'probabilities' of the window
-        pos_scores.append(score)
     
-        thr = app.get_best_threshold(1-proportion, pos_scores) # getting the threshold using the positive proportion
-        print(f"qtf{name} - proportion{1-proportion} - threshold{thr}")
+        thr = app.calc_threshold(round(1-proportion, 3), pos_scores) # getting the threshold using the positive proportion
+        print(f"qtf{name} - proportion{round(1-proportion, 3)} - threshold{thr}")
+        #pdb.set_trace()
         if name not in vet_accs:
           vet_accs[name] = []
         if len(self.tw) == 10:
@@ -158,7 +166,7 @@ class DriftDetector(ABC):
         vet_accs[name].append(1 if score >= thr else 0)
         # Adding the predicted instance to the first key of the dictionary, which is the predict classes without quantification
     vet_accs[first_key].append(self.model.predict(new_instance.to_frame().T.iloc[:, :-1]).astype(int)[0])
-    
+    print("================================")
     return vet_accs
   
   
