@@ -3,12 +3,9 @@ import os
 
 a = "AedesQuinx"
 
-path = f"{os.getcwd()}/datasets/test/{a}.test.csv"
+path = f"{os.getcwd()}/datasets/training/{a}.train"
 
-df = pd.read_csv(f"datasets/test/{a}.test.data")
-df = df.groupby(["context"])
-d1 = df.get_group(1).sample(frac=1).reset_index(drop=True)
-d2 = df.get_group(2).sample(frac=1).reset_index(drop=True)
-df_final = pd.concat([d1, d2], ignore_index=True)
+df = pd.read_csv(f"{path}.data")
+df = df.sample(frac=1).reset_index(drop=True)
 
-df_final.to_csv(path, index=False)
+df.to_csv(f"{path}.csv", index=False)
