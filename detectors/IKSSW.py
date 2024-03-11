@@ -3,14 +3,13 @@ from collections import deque
 from random import random
 
 class IKSSW:
-  def __init__(self, values, ca):
+  def __init__(self, values):
     '''Incremental Kolmogorov-Smirnov Sliding Window. This class assumes that one window is fixed (reference window) and another slides over a stream of data. The reference window can be updated to be the same as the current sliding window.
 
     Args:
       values: initial values for the reference and sliding windows.
     '''
     self.iks = IKS()
-    self.ca = ca
     self.sw = deque()
     self.reference = [(x, random()) for x in values]
 
@@ -22,7 +21,7 @@ class IKSSW:
       self.sw.append(wrnd)
       self.iks.AddObservation(wrnd, 2)
 
-  def Increment(self, value, window, index):
+  def Increment(self, value):
     '''Remove the oldest observation from the sliding window and replace it with a given value.
     
     Args:
@@ -51,7 +50,7 @@ class IKSSW:
     '''
     return self.iks.KS()
 
-  def Update(self, window):
+  def Update(self):
     '''Updates the IKSSW. The reference window becomes the sliding window.
     '''
     for val in self.reference:
@@ -64,7 +63,7 @@ class IKSSW:
     for val in self.reference:
       self.iks.Add(val, 1)
   
-  def Test(self, index):
+  def Test(self):
     '''Test whether the reference and sliding window follow the different probability distributions according to KS Test.
 
     Args:

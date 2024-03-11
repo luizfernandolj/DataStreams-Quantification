@@ -1,4 +1,4 @@
-from interface_class.dd import DriftDetector
+from interface_class.DriftDetector import DriftDetector
 
 import pandas as pd
 import numpy as np
@@ -73,7 +73,7 @@ class IKS(DriftDetector):
     
     for i in range(len(self.test)):
         print('IKS -> Example {}/{} drifts: {}'.format(i+1, len(self.test), drift_points), end='\r')
-        new_instance = self.test.loc[i]
+        new_instance = self.test.iloc[i, :]
         
         self.add_instance(new_instance) # incrementing one instance at window
         self.ikssw.Increment(new_instance.values.tolist()) # IKS incrementing one instance and excluding the first

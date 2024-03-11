@@ -30,7 +30,7 @@ class Experiment:
         
         # Running Datastream
         for i in range(0, len(self.testY)):
-            print(i)
+            print(i, end='\r')
             new_instance = self.testX.iloc[[i]]
             # Step of the window
             window = pd.concat([window, new_instance], ignore_index=True).iloc[1:]
@@ -52,6 +52,7 @@ class Experiment:
                                                      vet_accs)
             vet_accs[self.detector_name].append(self.model.predict(new_instance)[0])
             vet_accs['real'].append(self.testY.iloc[[i]].tolist()[0])
+            
                 
             if (self.detector.Test(i)): # Statistical test if the drift occured
                 print("drift")
@@ -62,10 +63,10 @@ class Experiment:
                 self.trainY = window_labels
                 self.model.fit(window, window_labels)
                 self.detector.Update(window)
-                iq = 0
+                iq = -1
             iq += 1
     
-        return pd.DataFrame(vet_accs), self.drifts
+        return pd.DataFrame(vet_accs), {self.detector_name:self.drifts}
     
     def apply_quantification(self, pos_scores: list[float], windowX : object, new_instance_score : float, vet_accs : dict[str: list[int]]):
         """Apply quantification into window, getting the positive scores and fiding the best threshold to classify the new instance
@@ -78,17 +79,17 @@ class Experiment:
         """
         self.app.check_train(self.trainX, self.trainY)
         proportions : dict[str:float]= self.app.aplly_qtf(windowX) # positive proportion of each quantifier
-        print("real prop", sum(vet_accs['real'])/len(vet_accs['real']))
+        #print("real prop", sum(vet_accs['real'])/len(vet_accs['real']))
         for qtf, proportion in proportions.items():
             name = f"{self.detector_name}-{qtf}"
-            print(qtf, proportion)
+            #print(qtf, proportion)
             
             thr = self.app.get_best_threshold(proportion, pos_scores) # getting the threshold using the positive proportion
             
             if name not in vet_accs:
                 vet_accs[name] = []
             #pdb.set_trace()
-            if len(vet_accs[self.detector_name])-1 > len(vet_accs[name]):
+            if len(vet_accs[self.detector_name]) - len(vet_accs[name]) >= 10:
                 vet_accs[name].extend(vet_accs[self.detector_name][-10:])
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)

@@ -6,6 +6,7 @@ import json
 from sklearn.ensemble import RandomForestClassifier
 from Experiment import Experiment
 from detectors.IBDD import IBDD
+from detectors.IKS import IKS
 import argparse
 import matplotlib.pyplot as plt
 import warnings
@@ -44,6 +45,13 @@ def run(dataset, window_size):
     vet_accs_table = pd.DataFrame()
     
     
+    ca = 1.95
+    iks = IKS(train, window_size, ca)
+    exp = Experiment(train, test, window_size, clf, iks, 'IKS')
+    vet_accs, drift_points = exp.run_stream()
+    vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+    drift_points_iks = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
+    
     #IBDD RUN
     epsilon = 3
     ibdd = IBDD(train.iloc[:, :-1], epsilon, window_size, dataset)
@@ -53,11 +61,11 @@ def run(dataset, window_size):
     drift_points_ibdd = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
     
     
-    #drift_table = pd.DataFrame({"IKS":drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})
+    drift_table = pd.DataFrame({"IKS": drift_points_iks, "IBDD":drift_points_ibdd, "REAL":contexts})
     vet_accs_table["real"] = test.iloc[:, -1].tolist()
     
     # Saving the dataframes into files for each dataset
-    #drift_table.to_csv(f"{path}/{dataset}-drift.csv", index=False)
+    drift_table.to_csv(f"{path}/{dataset}-drift.csv", index=False)
     vet_accs_table.to_csv(f"{path}/{dataset}-pred.csv", index=False)
      
     

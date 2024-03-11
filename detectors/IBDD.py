@@ -88,6 +88,5 @@ class IBDD(DriftDetector):
             self.inferior_threshold = self.nrmse[-1] - np.std(self.nrmse[-50:-1])
             self.superior_threshold = self.nrmse[-1] + np.mean(self.threshold_diffs)
             self.threshold_diffs.append(self.superior_threshold - self.inferior_threshold)
-        self.w1 = self.get_imgdistribution(f"{self.fname}/w1_cv.jpeg", window)
     
     
