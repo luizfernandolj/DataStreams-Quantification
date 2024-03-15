@@ -41,7 +41,7 @@ class Experiment:
             scores.append(new_instance_score)
             
             # Incrementing the new instance to the detector (IKS, IBDD and WRS)
-            self.detector.Increment(self.testX.iloc[[i]], window, i)
+            self.detector.Increment(self.testX.loc[i], window, i)
 
             if (iq >= 10):
                 # Applying quantification after 10 instances 

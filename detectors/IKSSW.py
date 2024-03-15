@@ -63,7 +63,7 @@ class IKSSW:
     for val in self.reference:
       self.iks.Add(val, 1)
   
-  def Test(self):
+  def Test(self, ca):
     '''Test whether the reference and sliding window follow the different probability distributions according to KS Test.
 
     Args:
@@ -72,7 +72,7 @@ class IKSSW:
     Returns:
       True if we **reject** the null-hypothesis that states that both windows have the same distribution. In other words, we can consider that the windows have now different distributions.
     '''
-    return self.iks.Test(self.ca)
+    return self.iks.Test(ca)
 
 if __name__ == "__main__":
   v = [random() for x in range(10)]

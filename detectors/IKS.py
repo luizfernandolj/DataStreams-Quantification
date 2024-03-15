@@ -1,6 +1,5 @@
 from interface_class.DriftDetector import DriftDetector
 
-import os
 import pandas as pd
 import numpy as np
 from detectors.IKSSW import IKSSW
@@ -17,7 +16,7 @@ class IKS(DriftDetector):
         self.ikssw.Increment(value.values.tolist())
     
     def Test(self, index):
-        self.detect_drift(self.ca)
+        return self.ikssw.Test(self.ca)
     
     def Update(self, window):  
         self.ikssw.Update()

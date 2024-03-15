@@ -7,6 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from Experiment import Experiment
 from detectors.IBDD import IBDD
 from detectors.IKS import IKS
+from detectors.WRS import WRS
 import argparse
 import matplotlib.pyplot as plt
 import warnings
@@ -44,6 +45,14 @@ def run(dataset, window_size):
     print(f"dataset: {dataset}")
     vet_accs_table = pd.DataFrame()
     
+    threshold = 0.001
+    wrs = WRS(train, window_size, threshold)
+    exp = Experiment(train, test, window_size, clf, wrs, 'WRS')
+    vet_accs, drift_points = exp.run_stream()
+    vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+    drift_points_wrs = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
+    
+    
     
     ca = 1.95
     iks = IKS(train, window_size, ca)
@@ -61,7 +70,7 @@ def run(dataset, window_size):
     drift_points_ibdd = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
     
     
-    drift_table = pd.DataFrame({"IKS": drift_points_iks, "IBDD":drift_points_ibdd, "REAL":contexts})
+    drift_table = pd.DataFrame({"IKS": drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})
     vet_accs_table["real"] = test.iloc[:, -1].tolist()
     
     # Saving the dataframes into files for each dataset
