@@ -45,6 +45,18 @@ def run(dataset, window_size):
     print(f"dataset: {dataset}")
     vet_accs_table = pd.DataFrame()
     
+    
+    
+    #IBDD RUN
+    epsilon = 3
+    ibdd = IBDD(train.iloc[:, :-1], epsilon, window_size, dataset)
+    exp = Experiment(train, test, window_size, clf, ibdd, 'IBDD')
+    vet_accs, drift_points = exp.run_stream()
+    vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
+    drift_points_ibdd = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
+    
+    
+    
     threshold = 0.001
     wrs = WRS(train, window_size, threshold)
     exp = Experiment(train, test, window_size, clf, wrs, 'WRS')
@@ -60,14 +72,6 @@ def run(dataset, window_size):
     vet_accs, drift_points = exp.run_stream()
     vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
     drift_points_iks = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
-    
-    #IBDD RUN
-    epsilon = 3
-    ibdd = IBDD(train.iloc[:, :-1], epsilon, window_size, dataset)
-    exp = Experiment(train, test, window_size, clf, ibdd, 'IBDD')
-    vet_accs, drift_points = exp.run_stream()
-    vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
-    drift_points_ibdd = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
     
     
     drift_table = pd.DataFrame({"IKS": drift_points_iks, "IBDD":drift_points_ibdd, "WRS":drift_points_wrs, "REAL":contexts})

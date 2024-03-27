@@ -30,7 +30,7 @@ class Experiment:
         
         # Running Datastream
         for i in range(0, len(self.testY)):
-            print(i, end='\r')
+            print(f"{self.detector_name}-{i}", end='\r')
             new_instance = self.testX.iloc[[i]]
             # Step of the window
             window = pd.concat([window, new_instance], ignore_index=True).iloc[1:]
@@ -50,6 +50,13 @@ class Experiment:
                                                      window, 
                                                      new_instance_score, 
                                                      vet_accs)
+            else:
+                if len(vet_accs) > 2:       
+                    for key, p in vet_accs.items():
+                        if key != "real" and key != self.detector_name:             
+                            vet_accs[key].append(self.model.predict(new_instance)[0])
+              
+                
             vet_accs[self.detector_name].append(self.model.predict(new_instance)[0])
             vet_accs['real'].append(self.testY.iloc[[i]].tolist()[0])
             
@@ -88,8 +95,6 @@ class Experiment:
             
             if name not in vet_accs:
                 vet_accs[name] = []
-            #pdb.set_trace()
-            if len(vet_accs[self.detector_name]) - len(vet_accs[name]) >= 10:
                 vet_accs[name].extend(vet_accs[self.detector_name][-10:])
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)
