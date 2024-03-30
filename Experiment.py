@@ -20,12 +20,12 @@ class Experiment:
     def run_stream(self):
         """Simulate a Datastream, running a window and testing the occurrences of drifts. While applying quantification
         """
-        # Starting window
+        # Start window
         window = self.trainX.iloc[-self.window_length:].copy(deep=True).reset_index(drop=True)
         window_labels = self.trainY.iloc[-self.window_length:].copy(deep=True).reset_index(drop=True)
         
         scores = self.model.predict_proba(window)[:, 1].tolist() # Getting the positive scores of the start window
-        vet_accs = {'real': [], self.detector_name : []}
+        vet_accs = {self.detector_name : []}
         iq = 0
         
         # Running Datastream
@@ -53,12 +53,12 @@ class Experiment:
             else:
                 if len(vet_accs) > 2:       
                     for key, p in vet_accs.items():
-                        if key != "real" and key != self.detector_name:             
+                        if key != self.detector_name:     
+                            # predicting the instances after the drift until the quantification prediction column is the same length as the detector prediction column        
                             vet_accs[key].append(self.model.predict(new_instance)[0])
               
                 
             vet_accs[self.detector_name].append(self.model.predict(new_instance)[0])
-            vet_accs['real'].append(self.testY.iloc[[i]].tolist()[0])
             
                 
             if (self.detector.Test(i)): # Statistical test if the drift occured

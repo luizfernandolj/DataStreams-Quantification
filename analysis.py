@@ -15,7 +15,7 @@ window_size = [1000, 1000, 200, 300]
 
 def prediction_analysis(vet_pred, window_size):
     df = pd.read_csv(f"{path}/tables/{vet_pred}")
-    true_labels = df.iloc[:, -1].tolist()
+    true_labels = df.iloc[:, 0].tolist()
     df.drop("real", axis=1, inplace=True)
     df = df[['IBDD-DyS', 'IKS-DyS', 'WRS-DyS', 'IBDD','IKS', 'WRS']]
     len_df = len(df)
@@ -24,11 +24,12 @@ def prediction_analysis(vet_pred, window_size):
     
     vet_acc = {}
     for c in df.columns:
-        mean_acc = []
-        for i in range(0, len(df), int(window_size)): 
-            acc = round(accuracy_score(y_true = true_labels[i:i+int(window_size)], y_pred = df[c].tolist()[i:i+int(window_size)]), 2)      
-            mean_acc.append(acc) 
-        vet_acc[c] = mean_acc
+        if c != "real":  
+            mean_acc = []
+            for i in range(0, len(df), int(window_size)): 
+                acc = round(accuracy_score(y_true = true_labels[i:i+int(window_size)], y_pred = df[c].tolist()[i:i+int(window_size)]), 2)      
+                mean_acc.append(acc) 
+            vet_acc[c] = mean_acc
     vet_acc = pd.DataFrame(vet_acc)
     return vet_acc, len_df
     
@@ -54,7 +55,7 @@ def plot(vet_acc, prop, window_size, dataset):
     
 for i, dataset in enumerate(datasets):
     print(datasets)
-    vet_drift, vet_pred, prop_win = list(filter(lambda x: dataset in x, f))
+    vet_drift, vet_pred = list(filter(lambda x: dataset in x, f))
     
     
     print("Proportion analysis...\n")
