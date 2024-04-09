@@ -2,7 +2,7 @@ from interface_class.DriftDetector import DriftDetector
 
 import pandas as pd
 import numpy as np
-from ikscode.IKSSW import IKSSW
+from detectors.IKSSW import IKSSW
 
 
 class IKS(DriftDetector):
