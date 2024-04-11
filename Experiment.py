@@ -49,7 +49,7 @@ class Experiment:
             # Incrementing the new instance to the detector (IKS, IBDD and WRS)
             self.detector.Increment(self.testX.loc[i], window, i)
 
-            if (iq >= 49):
+            if (iq >= self.window_length-1):
                 # Applying quantification after 10 instances 
                 #pdb.set_trace()
                 vet_accs = self.apply_quantification(scores,
@@ -124,7 +124,7 @@ class Experiment:
             
             if name not in vet_accs:
                 vet_accs[name] = []
-                vet_accs[name].extend(vet_accs[self.detector_name][-50:])
+                vet_accs[name].extend(vet_accs[self.detector_name][-self.window_length:])
             
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)
