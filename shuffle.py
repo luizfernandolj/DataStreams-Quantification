@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-a = "AedesQuinx"
+a = "wine"
 
 path = f"{os.getcwd()}/datasets/training/{a}.train"
 

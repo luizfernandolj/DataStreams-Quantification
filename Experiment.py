@@ -8,7 +8,7 @@ from utils.get_best_thr import get_best_threshold
 
 class Experiment:
     
-    def __init__(self, train_data, test_data, window_length, model, detector, detector_name):
+    def __init__(self, train_data, test_data, window_length, model, detector, detector_name, score_lenght):
         self.trainX = train_data.iloc[:, :-1]
         self.testX = test_data.iloc[:, :-1]
         self.trainY = train_data.iloc[:, -1]
@@ -17,6 +17,7 @@ class Experiment:
         self.model = model.fit(self.trainX, self.trainY)
         self.detector = detector
         self.detector_name = detector_name
+        self.score_lenght = score_lenght
         self.drifts = []
         self.quantifier_methods = ["CC", "ACC", "MS", "DyS"]
         
@@ -49,7 +50,7 @@ class Experiment:
             # Incrementing the new instance to the detector (IKS, IBDD and WRS)
             self.detector.Increment(self.testX.loc[i], window, i)
 
-            if (iq >= self.window_length-1):
+            if (len(test_scores) == self.score_lenght):
                 # Applying quantification after 10 instances 
                 #pdb.set_trace()
                 vet_accs = self.apply_quantification(scores,
@@ -60,7 +61,7 @@ class Experiment:
                                                      window, 
                                                      new_instance_score, 
                                                      vet_accs)
-                scores = scores[1:]
+                test_scores = test_scores[1:]
             else:
                 if len(vet_accs) > 2:       
                     for key, p in vet_accs.items():
@@ -121,11 +122,9 @@ class Experiment:
             name = f"{self.detector_name}-{qtf}"
             
             thr = get_best_threshold(proportion, test_scores) # getting the threshold using the positive proportion
-            
             if name not in vet_accs:
                 vet_accs[name] = []
-                vet_accs[name].extend(vet_accs[self.detector_name][-self.window_length:])
-            
+                vet_accs[name].extend(vet_accs[self.detector_name][-(self.score_lenght-1):])
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)
         return vet_accs
