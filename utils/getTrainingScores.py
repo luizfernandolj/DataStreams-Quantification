@@ -29,8 +29,6 @@ def getTrainingScores(X_train, Y_train, folds, clf):
     class_labl = []
     
     for fold_i, (train_index,valid_index) in enumerate(skf.split(X_train,Y_train)):
-        print('  Fold #%d' % (fold_i + 1))
-        print('Training_len', len(X_train))
         
         tr_data = pd.DataFrame(X_train.iloc[train_index])   #Train data and labels
         tr_lbl = Y_train.iloc[train_index]
@@ -42,8 +40,6 @@ def getTrainingScores(X_train, Y_train, folds, clf):
         
         results.extend(clf.predict_proba(valid_data)[:,1])     #evaluating scores
         class_labl.extend(valid_lbl)
-        
-        print('SCORES_Length:',len(results))
 
     # Fitting the final classifier
     clf.fit(X_train, Y_train)

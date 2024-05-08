@@ -73,7 +73,6 @@ class Experiment:
             
                 
             if (self.detector.Test(i)): # Statistical test if the drift occured
-                print("drift")
                 self.drifts.append(i)
                 
                 # turning current window into train, and updating classifier and detector

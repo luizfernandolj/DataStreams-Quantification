@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore")
 
 def run(dataset, window_size, score_lenght, path_train, path_tests, path_results, classifier, positive_proportions):
     
-    
+    # CHECKING IF THE IBDD FOLDER ALREADY EXISTS, IF YES, CLEAR IT
     ibdd_dir = f"{os.getcwd()}/ibdd_folder/{dataset}"
     if not os.path.isdir("ibdd_folder"):
         os.mkdir(f"{os.getcwd()}/ibdd_folder")
@@ -25,22 +25,24 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
     os.mkdir(ibdd_dir)
     
     
+    # CREATING TEST FILES VARYING CLASS DISTRIBUTION IN EACH CONTEXT
     make_tests(path_tests, dataset, positive_proportions)
     
 
-    
+    # PASSING BY EACH TEST FILE
     for f in list(os.listdir(f"{path_tests}/{dataset}")):
         print(f)
         
         test = pd.read_csv(f"{path_tests}/{dataset}/{f}")
         train = pd.read_csv(f"{path_train}")
+        train['class'].replace(2, int(0), inplace=True)
 
-        # taking the context 
+        # TAKING THE CONTEXT
         contexts = test.iloc[:, -1].tolist()
         contexts = [1 if contexts[i-1] != x else 0 for i, x in enumerate(contexts) ]
         real_drifts = [i for i, x in enumerate(contexts) if x == 1]
         
-        # creating train, test datastreams
+        # CREATING TRAIN, TEST DATASTREAMS
         train = train.iloc[:, :-1].copy()
         test = test.iloc[:, :-1].copy()
 
@@ -48,37 +50,49 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         vet_accs_table = pd.DataFrame()
         
         
-        #IBDD RUN
+        #IBDD RUN EXPERIMENT
         epsilon = 3
         ibdd = IBDD(train.iloc[:, :-1], epsilon, window_size, dataset)
         exp = Experiment(train, test, window_size, classifier, ibdd, 'IBDD', score_lenght)
         vet_accs_table, drift_points_ibdd = make_experiment(exp, contexts, vet_accs_table)
         
         
+        #BASELINE RUN EXPERIMEN
         threshold = 0.001
         wrs = WRS(train, window_size, threshold)
         exp = Experiment(train, test, window_size, classifier, wrs, 'baseline', score_lenght)
         vet_accs_table, drift_points_baseline = make_experiment(exp, contexts, vet_accs_table)
         
         
+        #IKS RUN EXPERIMEN
         ca = 1.95
         iks = IKS(train, window_size, ca)
         exp = Experiment(train, test, window_size, classifier, iks, 'IKS', score_lenght)
         vet_accs_table, drift_points_iks = make_experiment(exp, contexts, vet_accs_table)
 
         
-        
+        # CREATING VARIABLES TO SAVE TO A EXTERNAL FILE
         drift_table = pd.DataFrame({"IKS": drift_points_iks, "IBDD":drift_points_ibdd, "baseline":drift_points_baseline, "REAL":contexts})
         vet_accs_table["real"] = test.iloc[:, -1].tolist()
         
         
-        # Saving the dataframes into files for each dataset
+        # SAVING THE DATAFRAMES INTO FILES FOR EACH DATASET
         drift_table.to_csv(f"{path_results}/{f.split('.')[0]}_{window_size}_{score_lenght}_drift.csv", index=False)
-        vet_accs_table.to_csv(f"{path_results}/{f.split('.')[0]}_{window_size}_{score_lenght}_pred.csv", index=False)
+        vet_accs_table.to_csv(f"{path_results}/{f.split('.')[:-1]}_{window_size}_{score_lenght}_pred.csv", index=False)
      
     
 
 def make_experiment(experiment_object, contexts, vet_accs_table) -> list:
+    """create a new experiment and saving the results into dataframes
+
+    Args:
+        experiment_object (Any): drift detector to be running the experiments on
+        contexts (list): list of context
+        vet_accs_table (DataFrame): pandas dataframe to save the results of experiment
+
+    Returns:
+        list: results of accuracies of predictions and the list of drift predictions
+    """
     vet_accs, drift_points = experiment_object.run_stream()
     vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
     drift_points = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
