@@ -2,7 +2,6 @@ import os
 import shutil
 import pandas as pd
 import numpy as np
-import json
 from sklearn.ensemble import RandomForestClassifier
 from Experiment import Experiment
 from detectors.IBDD import IBDD
@@ -77,8 +76,8 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         
         
         # SAVING THE DATAFRAMES INTO FILES FOR EACH DATASET
-        drift_table.to_csv(f"{path_results}/{f.split('.')[0]}_{window_size}_{score_lenght}_drift.csv", index=False)
-        vet_accs_table.to_csv(f"{path_results}/{f.split('.')[:-1]}_{window_size}_{score_lenght}_pred.csv", index=False)
+        drift_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_drift.csv", index=False)
+        vet_accs_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_pred.csv", index=False)
      
     
 
