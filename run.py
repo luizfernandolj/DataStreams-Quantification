@@ -53,21 +53,21 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         epsilon = 3
         ibdd = IBDD(train.iloc[:, :-1], epsilon, window_size, dataset)
         exp = Experiment(train, test, window_size, classifier, ibdd, 'IBDD', score_lenght)
-        vet_accs_table, drift_points_ibdd = make_experiment(exp, contexts, vet_accs_table)
+        vet_accs_table, drift_points_ibdd, window_prop_ibdd = make_experiment(exp, contexts, vet_accs_table)
         
         
         #BASELINE RUN EXPERIMEN
         threshold = 0.001
         wrs = WRS(train, window_size, threshold)
         exp = Experiment(train, test, window_size, classifier, wrs, 'baseline', score_lenght)
-        vet_accs_table, drift_points_baseline = make_experiment(exp, contexts, vet_accs_table)
+        vet_accs_table, drift_points_baseline, window_prop_baseline = make_experiment(exp, contexts, vet_accs_table)
         
         
         #IKS RUN EXPERIMEN
         ca = 1.95
         iks = IKS(train, window_size, ca)
         exp = Experiment(train, test, window_size, classifier, iks, 'IKS', score_lenght)
-        vet_accs_table, drift_points_iks = make_experiment(exp, contexts, vet_accs_table)
+        vet_accs_table, drift_points_iks, window_prop_iks = make_experiment(exp, contexts, vet_accs_table)
 
         
         # CREATING VARIABLES TO SAVE TO A EXTERNAL FILE
@@ -75,7 +75,11 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         vet_accs_table["real"] = test.iloc[:, -1].tolist()
         
         
+        window_prop = pd.concat([window_prop_ibdd, window_prop_baseline, window_prop_iks], axis=1)
+        
+        
         # SAVING THE DATAFRAMES INTO FILES FOR EACH DATASET
+        window_prop.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_prop.csv")
         drift_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_drift.csv", index=False)
         vet_accs_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_pred.csv", index=False)
      

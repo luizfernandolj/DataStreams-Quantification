@@ -10,6 +10,7 @@ from sklearn.metrics import accuracy_score
 path_results = "results/"
 files = os.listdir(path_results)
 variables = {"prop1":[], "prop2":[], "win_size":[], "scores_size":[], "file_type":[]}
+detectors = ["IBDD", "baseline", "IKS"]
 columns = []
 for file in files:
     f = file[:-4]
@@ -22,6 +23,8 @@ for file in files:
         variables["file_type"].append(file_type)
     
         df = pd.read_csv(f"{path_results}{file}")
+        
+        
     
         for c in list(df.columns):
             columns.append(c)
@@ -123,6 +126,13 @@ sidebar = html.Div(
                             tooltip={"placement": "bottom", "always_visible": True})
                 ])
             ]),
+        dbc.Row([
+            dbc.Col([
+                html.Label('Detector Real Proportions', className="pt-3"),
+                dcc.Dropdown(detectors, placeholder="All",
+                                style={"color":"#2e2f2e"}, id='real-proportions-dropdown', multi=True),
+            ])
+        ]),
         ], vertical=True, pills=True),
     ], style=SIDEBAR_STYLE,
 )
@@ -143,6 +153,12 @@ content = html.Div([
             dcc.Graph(id="box-plot")
         ], width=10)
     ], justify="around", style={"margin-top":"40px"}),
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="proportions-plot")
+        ], width=10)
+    ], justify="around", style={"margin-top":"40px"}),
+    
 ], id="page-content", style=CONTENT_STYLE)
 
 
@@ -164,23 +180,25 @@ app.layout = html.Div([
 @callback(
     Output("line-plot", "figure"),
     Output("box-plot", "figure"),
+    Output("proportions-plot", "figure"),
     Input("algorithms-dropdown", "value"),
     Input("win-size-slider", "value"),
     Input("scores-size-slider", "value"),
     Input("prop1-slider", "value"),
     Input("prop2-slider", "value"),
+    Input("real-proportions-dropdown", "value"),
 )
 
-def update_graph(algorithms, size, score, prop1, prop2):
+def update_graph(algorithms, size, score, prop1, prop2, real_prop):
+    df_prop = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_prop.csv")
     df = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_pred.csv")
     real = df["real"].tolist()
     df.drop("real", inplace=True, axis=1)
     window_size = int(size)
-    alg = list(df.columns)
     
     if algorithms:
         df = df[algorithms]
-        alg = algorithms
+        df_prop_noreal = df_prop[algorithms]
     
     df_acc = {} 
     for a in df.columns:
@@ -193,6 +211,7 @@ def update_graph(algorithms, size, score, prop1, prop2):
     
     line = px.line(df_acc, title="Accuracy of each Algorithms by time", labels={"variable":"Algorithms", "value":"Accuracy"}, height=700)
     box = px.box(df_acc, title="Algorithms accuracy", labels={"variable":"Algorithms", "value":"Accuracy"}, height=500)
+    
 
     lin = np.linspace(window_size, len(df), len(df_acc))
 
@@ -205,9 +224,13 @@ def update_graph(algorithms, size, score, prop1, prop2):
             ticktext = list(lin)
         )
     )
+    
+    
+    
+    
     print(df_acc)
 
-    return line, box
+    return line, box, propline
 
 
 ##################################           RUN           #################################
