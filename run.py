@@ -79,7 +79,7 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         
         
         # SAVING THE DATAFRAMES INTO FILES FOR EACH DATASET
-        window_prop.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_prop.csv")
+        window_prop.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_prop.csv", index=False)
         drift_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_drift.csv", index=False)
         vet_accs_table.to_csv(f"{path_results}/{f[:f.rfind('.')]}_{window_size}_{score_lenght}_pred.csv", index=False)
      
@@ -96,11 +96,11 @@ def make_experiment(experiment_object, contexts, vet_accs_table) -> list:
     Returns:
         list: results of accuracies of predictions and the list of drift predictions
     """
-    vet_accs, drift_points = experiment_object.run_stream()
+    vet_accs, drift_points, win_prop = experiment_object.run_stream()
     vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
     drift_points = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
     
-    return vet_accs_table, drift_points
+    return vet_accs_table, drift_points, win_prop
 
     
     
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument('score_lenght', type=int)
     args = parser.parse_args()
     
-    path_train = f"{os.getcwd()}/datasets/training/{args.dataset}.train.data"
+    path_train = f"{os.getcwd()}/datasets/training/{args.dataset}.train.csv"
     path_tests = f"{os.getcwd()}/datasets/test"
     path_results = f"{os.getcwd()}/results/"
     

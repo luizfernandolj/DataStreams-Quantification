@@ -8,7 +8,7 @@ from utils.get_best_thr import get_best_threshold
 
 class Experiment:
     
-    def __init__(self, train_data, test_data, window_length, model, detector, detector_name, score_lenght):
+    def __init__(self, train_data, test_data, window_length, model, detector, detector_name, score_length):
         self.trainX = train_data.iloc[:, :-1]
         self.testX = test_data.iloc[:, :-1]
         self.trainY = train_data.iloc[:, -1]
@@ -17,7 +17,7 @@ class Experiment:
         self.model = model.fit(self.trainX, self.trainY)
         self.detector = detector
         self.detector_name = detector_name
-        self.score_lenght = score_lenght
+        self.score_length = score_length
         self.drifts = []
         self.quantifier_methods = ["CC", "ACC", "MS", "DyS"]
         
@@ -29,13 +29,13 @@ class Experiment:
         window_labels = self.trainY.iloc[-self.window_length:].copy(deep=True).reset_index(drop=True)
         
         # proportions predicted by eacch quantifier method and real proportion
-        window_prop = {qtf:[] for qtf in self.quantifier_methods}
+        window_prop = {f"{self.detector_name}-{qtf}":[] for qtf in self.quantifier_methods}
         window_prop[f"real_{self.detector_name}"] = []
-        real_labels_window = []
+        real_labels_window = self.trainY.iloc[-self.score_length:].tolist()
         
         # Getting the training scores, and the initial things we need to run the quantification methods
         scores, tprfpr, pos_scores, neg_scores = self.get_train_values()
-        test_scores = [] 
+        test_scores = self.model.predict_proba(self.trainX.iloc[-(self.score_length-1):])[:, 1].tolist()
         
         vet_accs = {self.detector_name : []}
         iq = 0
@@ -49,42 +49,34 @@ class Experiment:
             window_labels = pd.concat([window_labels, self.testY.iloc[[i]]], ignore_index=True).iloc[1:]
             
             # Getting the positive score of each instance
-            new_instance_score = self.model.predict_proba(new_instance)[:, 1][0]
+            new_instance_score = float(self.model.predict_proba(new_instance)[:, 1][0])
             test_scores.append(new_instance_score)
-            real_labels_window.append(self.testY.iloc[[i]])
+            real_labels_window.append(self.testY.iloc[[i]].tolist()[0])
             
             # Incrementing the new instance to the detector (IKS, IBDD and WRS)
             self.detector.Increment(self.testX.loc[i], window, i)
-
-            if (len(test_scores) == self.score_lenght):
                 
-                window_prop[f"real_{self.detector_name}"] = round(sum(real_labels_window)/len(real_labels_window), 2)
-                
-                # Applying quantification after 10 instances 
-                #pdb.set_trace()
-                vet_accs, window_prop = self.apply_quantification(scores,
-                                                     np.array(test_scores),
-                                                     tprfpr,
-                                                     pos_scores,
-                                                     neg_scores,
-                                                     window, 
-                                                     new_instance_score, 
-                                                     vet_accs,
-                                                     window_prop)
-                
-                test_scores = test_scores[1:]
-                real_labels_window = real_labels_window[1:]
-            else:
-                if len(vet_accs) > 2:       
-                    for key, p in vet_accs.items():
-                        if key != self.detector_name:             
-                            vet_accs[key].append(self.model.predict(new_instance)[0])
+            window_prop[f"real_{self.detector_name}"].append(round(sum(real_labels_window)/len(real_labels_window), 2))
+            
+            # Applying quantification after 10 instances 
+            #pdb.set_trace()
+            vet_accs, window_prop = self.apply_quantification(scores,
+                                                    np.array(test_scores),
+                                                    tprfpr,
+                                                    pos_scores,
+                                                    neg_scores,
+                                                    window, 
+                                                    new_instance_score, 
+                                                    vet_accs,
+                                                    window_prop)
+            
+            test_scores = test_scores[1:]
+            real_labels_window = real_labels_window[1:]
               
                 
             vet_accs[self.detector_name].append(self.model.predict(new_instance)[0])
-            
                 
-            if (self.detector.Test(i)): # Statistical test if the drift occured
+            if (self.detector.Test(i)): 
                 self.drifts.append(i)
                 
                 # turning current window into train, and updating classifier and detector
@@ -92,7 +84,8 @@ class Experiment:
                 self.trainY = window_labels
                 scores, tprfpr, pos_scores, neg_scores = self.get_train_values()
                 self.detector.Update(window)
-                test_scores = []
+                test_scores = self.model.predict_proba(self.trainX.iloc[-(self.score_length-1):])[:, 1].tolist()
+                real_labels_window = self.trainY.iloc[-self.score_length:].tolist()
                 iq = -1
             iq += 1
     
@@ -130,7 +123,7 @@ class Experiment:
                                              measure="topsoe",
                                              test_data=windowX)
             
-            window_prop[qtf_method] = pred_pos_prop
+            window_prop[f"{self.detector_name}-{qtf_method}"].append(round(pred_pos_prop, 2))
             proportions[f"{self.detector_name}-{qtf_method}"] = pred_pos_prop
             
         for qtf, proportion in proportions.items():
@@ -139,7 +132,6 @@ class Experiment:
             thr = get_best_threshold(proportion, test_scores) # getting the threshold using the positive proportion
             if name not in vet_accs:
                 vet_accs[name] = []
-                vet_accs[name].extend(vet_accs[self.detector_name][-(self.score_lenght-1):])
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)
         return vet_accs, window_prop

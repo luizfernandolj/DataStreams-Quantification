@@ -191,14 +191,25 @@ app.layout = html.Div([
 
 def update_graph(algorithms, size, score, prop1, prop2, real_prop):
     df_prop = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_prop.csv")
+    
+    if not real_prop: 
+        df_prop_reals = df_prop[[f"real_{detec}" for detec in detectors]]
+    else:
+        df_prop_reals = df_prop[[f"real_{real_prop}"]]
+    
+    
     df = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_pred.csv")
     real = df["real"].tolist()
     df.drop("real", inplace=True, axis=1)
     window_size = int(size)
     
+    df_prop_noreal = df_prop.drop([f"real_{detec}" for detec in detectors], axis=1)
     if algorithms:
         df = df[algorithms]
-        df_prop_noreal = df_prop[algorithms]
+        df_prop_noreal = df_prop[[p for p in algorithms if p not in detectors]]
+    
+    
+    df_all_prop = pd.concat([df_prop_noreal, df_prop_reals], axis=1)
     
     df_acc = {} 
     for a in df.columns:
@@ -208,6 +219,16 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
             mean_acc.append(acc) 
         df_acc[a] = mean_acc
     df_acc = pd.DataFrame(df_acc)
+    
+    
+    prop_final = {} 
+    for a in df_all_prop.columns:
+        mean_prop = []
+        for i in range(0, len(df), window_size): 
+            mean =   df_all_prop[a].iloc[i:i+int(window_size)].mean()    
+            mean_prop.append(mean) 
+        prop_final[a] = mean_prop
+    prop_final = pd.DataFrame(prop_final)
     
     line = px.line(df_acc, title="Accuracy of each Algorithms by time", labels={"variable":"Algorithms", "value":"Accuracy"}, height=700)
     box = px.box(df_acc, title="Algorithms accuracy", labels={"variable":"Algorithms", "value":"Accuracy"}, height=500)
@@ -227,8 +248,17 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
     
     
     
+    propline = px.line( prop_final, title="Proportions of the windows", labels={"variable":"Algorithms", "value":"Proportions"}, height=700)
+    propline.update_layout(
+        xaxis_title="Instances",
+        yaxis_title="Window Proportions",
+        xaxis = dict(
+            tickmode = 'array',
+            tickvals = list(range(0, len(df_acc))),
+            ticktext = list(lin)
+        )
+    )
     
-    print(df_acc)
 
     return line, box, propline
 
