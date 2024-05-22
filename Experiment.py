@@ -127,7 +127,7 @@ class Experiment:
             proportions[f"{self.detector_name}-{qtf_method}"] = pred_pos_prop
             
         for qtf, proportion in proportions.items():
-            name = f"{self.detector_name}-{qtf}"
+            name = qtf
             
             thr = get_best_threshold(proportion, test_scores) # getting the threshold using the positive proportion
             if name not in vet_accs:
