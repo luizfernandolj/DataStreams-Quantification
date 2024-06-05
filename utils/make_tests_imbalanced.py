@@ -3,14 +3,15 @@ import numpy as np
 import os
 import shutil
 
-def make_tests(path_tests, dataset, positive_proportions) -> None:
+def make_tests(path_tests, dataset, positive_proportions, real_drifts) -> None:
     if not os.path.isdir(f"{path_tests}/{dataset}"):
         os.mkdir(f"{path_tests}/{dataset}")
     
     df = pd.read_csv(f"{path_tests}/{dataset}.test.csv")
     df['class'].replace(2, int(0), inplace=True)
     
-    size = int(len(df)/4)
+    
+    size = int(df.iloc[:real_drifts[0]].shape[0])
 
     context1 = df[df['context'] == 1]
     context2 = df[df['context'] == 2]

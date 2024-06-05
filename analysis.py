@@ -9,28 +9,31 @@ from sklearn.metrics import accuracy_score
 
 path_results = "results/"
 files = os.listdir(path_results)
-variables = {"prop1":[], "prop2":[], "win_size":[], "scores_size":[], "file_type":[]}
-detectors = ["IBDD", "baseline", "IKS"]
+variables = {}
+detectors = ["baseline"]
 columns = []
 for file in files:
     f = file[:-4]
-    prop1, prop2, window_size, scores_size, file_type = f.split("_")
+    dataset, prop1, prop2, window_size, scores_size, file_type = f.split("_")
+    if not dataset in variables.keys():
+        variables[dataset] =  {"prop1":[], "prop2":[], "win_size":[], "scores_size":[], "file_type":[]}
     if file_type != "drift":  
-        variables["prop1"].append(float(prop1))
-        variables["prop2"].append(float(prop2))
-        variables["win_size"].append(int(window_size))
-        variables["scores_size"].append(int(scores_size))
-        variables["file_type"].append(file_type)
+        variables[dataset]["prop1"].append(float(prop1))
+        variables[dataset]["prop2"].append(float(prop2))
+        variables[dataset]["win_size"].append(int(window_size))
+        variables[dataset]["scores_size"].append(int(scores_size))
+        variables[dataset]["file_type"].append(file_type)
     
         df = pd.read_csv(f"{path_results}{file}")
         
         
-    
-        for c in list(df.columns):
-            columns.append(c)
+        if file_type == "pred":
+            for c in list(df.columns):
+                columns.append(c)
 
-columns = set(columns)
-columns = list(columns)
+datasets = list(variables.keys())
+
+columns = list(set(columns))
 columns.remove("real")
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.LUX])
@@ -74,6 +77,13 @@ sidebar = html.Div(
     dbc.Nav([
         dbc.Row([
             dbc.Col([
+                html.Label('Datasets', className="pt-3"),
+                dcc.Dropdown(datasets, placeholder= "None",
+                                style={"color":"#2e2f2e"}, id='datasets-dropdown'),
+            ])
+        ]),
+        dbc.Row([
+            dbc.Col([
                 html.Label('Algorithms', className="pt-3"),
                 dcc.Dropdown(columns, placeholder="All",
                                 style={"color":"#2e2f2e"}, id='algorithms-dropdown', multi=True),
@@ -82,10 +92,7 @@ sidebar = html.Div(
         dbc.Row([
             dbc.Col([
                 html.Label('Window Size', className="pt-3"),
-                dcc.Slider(min=min(variables["win_size"]),
-                            max=max(variables["win_size"]),
-                            value=1000,
-                            marks={"0": "0", "1000": "1000", "2000":"2000"},
+                dcc.Slider( marks={"0": "0", "1000": "1000", "2000":"2000"},
                             id='win-size-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
             ])
@@ -93,10 +100,7 @@ sidebar = html.Div(
         dbc.Row([
             dbc.Col([
                 html.Label('Scores Size', className="pt-3"),
-                dcc.Slider(min=min(variables["scores_size"]),
-                            max=max(variables["scores_size"]),
-                            value=50,
-                            marks={"50": "50", "100": "100", "500":"500"},
+                dcc.Slider(marks={"100": "100", "500":"500"},
                             id='scores-size-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
             ])
@@ -105,10 +109,7 @@ sidebar = html.Div(
         dbc.Row([
             dbc.Col([
                 html.Label('Proportion of context 1', className="pt-3"),
-                dcc.Slider(min=min(variables["prop1"]),
-                            max=max(variables["prop1"]),
-                            marks={"0.2": "20%", "0.5": "50%", "0.8":"80%"},
-                            value=0.5,
+                dcc.Slider(marks={"0.2": "20%", "0.5": "50%", "0.8":"80%"},
                             step=0.3,
                             id='prop1-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
@@ -117,10 +118,7 @@ sidebar = html.Div(
         dbc.Row([
             dbc.Col([
                 html.Label('Proportion of context 2', className="pt-3"),
-                dcc.Slider(min=min(variables["prop2"]),
-                            max=max(variables["prop2"]),
-                            marks={"0.2": "20%", "0.5": "50%", "0.8":"80%"},
-                            value=0.5,
+                dcc.Slider(marks={"0.2": "20%", "0.5": "50%", "0.8":"80%"},
                             step=0.3,
                             id='prop2-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
@@ -176,6 +174,64 @@ app.layout = html.Div([
 
 
 ##################################           CALLBACKS           #################################
+@callback(
+    Output("win-size-slider", "min"),
+    Output("scores-size-slider", "min"),
+    Output("prop1-slider", "min"),
+    Output("prop2-slider", "min"),
+    Input('datasets-dropdown', "value"),
+)
+
+def update_sliders_min(dataset):
+    if not dataset:
+        return 0, 0, 0, 0
+    win_size = min(variables[dataset]["win_size"])
+    scores_size = min(variables[dataset]["scores_size"])
+    prop1 = min(variables[dataset]["prop1"])
+    prop2 = min(variables[dataset]["prop2"])
+    return win_size, scores_size, prop1, prop2
+
+
+
+
+@callback(
+    Output("win-size-slider", "max"),
+    Output("scores-size-slider", "max"),
+    Output("prop1-slider", "max"),
+    Output("prop2-slider", "max"),
+    Input('datasets-dropdown', "value"),
+)
+
+def update_sliders_max(dataset):
+    if not dataset:
+        return 0, 0, 0, 0
+    win_size = max(variables[dataset]["win_size"])
+    scores_size = max(variables[dataset]["scores_size"])
+    prop1 = max(variables[dataset]["prop1"])
+    prop2 = max(variables[dataset]["prop2"])
+    return win_size, scores_size, prop1, prop2
+
+
+
+@callback(
+    Output("win-size-slider", "value"),
+    Output("scores-size-slider", "value"),
+    Output("prop1-slider", "value"),
+    Output("prop2-slider", "value"),
+    Input('datasets-dropdown', "value"),
+)
+
+def update_sliders_value(dataset):
+    if not dataset:
+        return 0, 0, 0, 0
+    win_size = variables[dataset]["win_size"][0]
+    scores_size = variables[dataset]["scores_size"][0]
+    prop1 = variables[dataset]["prop1"][0]
+    prop2 = variables[dataset]["prop2"][0]
+    return win_size, scores_size, prop1, prop2
+
+
+
 
 @callback(
     Output("line-plot", "figure"),
@@ -187,10 +243,18 @@ app.layout = html.Div([
     Input("prop1-slider", "value"),
     Input("prop2-slider", "value"),
     Input("real-proportions-dropdown", "value"),
+    Input('datasets-dropdown', "value")
 )
 
-def update_graph(algorithms, size, score, prop1, prop2, real_prop):
-    df_prop = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_prop.csv")
+def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
+    
+    if not dataset:
+        line = px.line()
+        box = px.box()
+        propline = px.line()
+        return line, box, propline
+    
+    df_prop = pd.read_csv(f"{path_results}{dataset}_{prop1}_{prop2}_{size}_{score}_prop.csv")
     
     if not real_prop: 
         df_prop_reals = df_prop[[f"real_{detec}" for detec in detectors]]
@@ -198,7 +262,7 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
         df_prop_reals = df_prop[[f"real_{real_prop}"]]
     
     
-    df = pd.read_csv(f"{path_results}{prop1}_{prop2}_{size}_{score}_pred.csv")
+    df = pd.read_csv(f"{path_results}{dataset}_{prop1}_{prop2}_{size}_{score}_pred.csv")
     real = df["real"].tolist()
     df.drop("real", inplace=True, axis=1)
     window_size = int(size)
@@ -234,7 +298,7 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
     box = px.box(df_acc, title="Algorithms accuracy", labels={"variable":"Algorithms", "value":"Accuracy"}, height=500)
     
 
-    lin = np.linspace(window_size, len(df), len(df_acc))
+    lin = np.linspace(window_size, len(df), len(df_acc), dtype=int)
 
     line.update_layout(
         xaxis_title="Instances",
@@ -242,7 +306,8 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
         xaxis = dict(
             tickmode = 'array',
             tickvals = list(range(0, len(df_acc))),
-            ticktext = list(lin)
+            ticktext = list(lin),
+            tickangle=-45,
         )
     )
     
@@ -255,7 +320,8 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop):
         xaxis = dict(
             tickmode = 'array',
             tickvals = list(range(0, len(df_acc))),
-            ticktext = list(lin)
+            ticktext = list(lin),
+            tickangle=-45,
         )
     )
     
