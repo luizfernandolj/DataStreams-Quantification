@@ -12,7 +12,7 @@ def make_tests(path_tests, dataset, positive_proportions, real_drifts) -> None:
     
     
     size = int(df.iloc[:real_drifts[0]].shape[0])
-
+    print(size)
     context1 = df[df['context'] == 1]
     context2 = df[df['context'] == 2]
 
@@ -22,7 +22,7 @@ def make_tests(path_tests, dataset, positive_proportions, real_drifts) -> None:
             
             c2_sample1, c2_sample2 = create_samples(context2, size, pos_prop2)
             
-            test = pd.concat([c1_sample1, c2_sample1, c1_sample2, c2_sample2], ignore_index=True)
+            test = pd.concat([c1_sample1, c2_sample1], ignore_index=True)
             test.to_csv(f"{path_tests}/{dataset}/{pos_prop1}_{pos_prop2}.csv", index=False)
     
     

@@ -4,10 +4,12 @@ import numpy as np
 import plotly.express as px
 from dash import Dash, html, dcc, dash_table, Input, Output, State, callback
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 from sklearn.metrics import accuracy_score
 
 
 path_results = "results/"
+path_tests = "datasets/test/"
 files = os.listdir(path_results)
 variables = {}
 detectors = ["baseline"]
@@ -61,8 +63,8 @@ CONTENT_STYLE = {
     "margin-left": "25rem",
     "margin-right": "0",
     "top":0,
-    "padding": "0 0",
-    "background-color": "#F5F5F5",
+    "padding": "60px 20px",
+    "background-color": "#3e3f3e",
     "height":"300vw",
 }
 
@@ -93,6 +95,7 @@ sidebar = html.Div(
             dbc.Col([
                 html.Label('Window Size', className="pt-3"),
                 dcc.Slider( marks={"0": "0", "1000": "1000", "2000":"2000"},
+                           step=None,
                             id='win-size-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
             ])
@@ -100,7 +103,8 @@ sidebar = html.Div(
         dbc.Row([
             dbc.Col([
                 html.Label('Scores Size', className="pt-3"),
-                dcc.Slider(marks={"100": "100", "500":"500"},
+                dcc.Slider(marks={"50":"50", "100": "100", "500":"500"},
+                           step=None,
                             id='scores-size-slider',
                             tooltip={"placement": "bottom", "always_visible": True})
             ])
@@ -142,18 +146,22 @@ sidebar = html.Div(
 content = html.Div([
     dbc.Row([
         dbc.Col([
-            dcc.Graph(id="line-plot")
+            dcc.Graph(id="concept-drift-plot")
         ], width=10)
-    ], justify="around", style={"margin-top":"40px"}),
-
+    ], justify="around", style={"margin-top":"0px"}),
     dbc.Row([
         dbc.Col([
-            dcc.Graph(id="box-plot")
+            dcc.Graph(id="line-plot")
         ], width=10)
     ], justify="around", style={"margin-top":"40px"}),
     dbc.Row([
         dbc.Col([
             dcc.Graph(id="proportions-plot")
+        ], width=10)
+    ], justify="around", style={"margin-top":"40px"}),
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="box-plot")
         ], width=10)
     ], justify="around", style={"margin-top":"40px"}),
     
@@ -234,6 +242,7 @@ def update_sliders_value(dataset):
 
 
 @callback(
+    Output("concept-drift-plot", "figure"),
     Output("line-plot", "figure"),
     Output("box-plot", "figure"),
     Output("proportions-plot", "figure"),
@@ -249,10 +258,18 @@ def update_sliders_value(dataset):
 def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     
     if not dataset:
+        concept_line = px.line()
         line = px.line()
         box = px.box()
         propline = px.line()
-        return line, box, propline
+        return concept_line, line, box, propline
+    
+    
+    concept_df = pd.read_csv(f"{path_tests}{dataset}/{prop1}_{prop2}.csv")
+    concept_df = concept_df["context"].iloc[size:]
+
+    concept_line = px.line(concept_df, line_shape='hv', height=250, labels={"value":"concepts", "index":"instances"}, title="Concepts along stream")
+    
     
     df_prop = pd.read_csv(f"{path_results}{dataset}_{prop1}_{prop2}_{size}_{score}_prop.csv")
     
@@ -278,8 +295,8 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     df_acc = {} 
     for a in df.columns:
         mean_acc = []
-        for i in range(0, len(df), window_size): 
-            acc = round(accuracy_score(y_true = real[i:i+int(window_size)], y_pred = df[a].tolist()[i:i+int(window_size)]), 2)      
+        for i in range(0, len(df), int(size/2)): 
+            acc = round(accuracy_score(y_true = real[i:i+int(size)], y_pred = df[a].tolist()[i:i+int(size)]), 2)      
             mean_acc.append(acc) 
         df_acc[a] = mean_acc
     df_acc = pd.DataFrame(df_acc)
@@ -287,16 +304,28 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     
     prop_final = {} 
     for a in df_all_prop.columns:
-        mean_prop = []
-        for i in range(0, len(df), window_size): 
-            mean =   df_all_prop[a].iloc[i:i+int(window_size)].mean()    
-            mean_prop.append(mean) 
-        prop_final[a] = mean_prop
+        median_prop = []
+        for i in range(0, len(df), int(size/2)): 
+            median =   df_all_prop[a].iloc[i:i+int(size)].median()    
+            median_prop.append(median) 
+        prop_final[a] = median_prop
     prop_final = pd.DataFrame(prop_final)
     
-    line = px.line(df_acc, title="Accuracy of each Algorithms by time", labels={"variable":"Algorithms", "value":"Accuracy"}, height=700)
-    box = px.box(df_acc, title="Algorithms accuracy", labels={"variable":"Algorithms", "value":"Accuracy"}, height=500)
     
+    c = ['hsl('+str(h)+',65%'+',65%)' for h in np.linspace(0, 360, len(df_acc.columns))]
+    
+    
+    
+    line = px.line(df_acc, title="Accuracy of each Algorithms by time", labels={"variable":"Algorithms", "value":"Accuracy"}, height=700)
+    box = go.Figure(data=[go.Box(name=list(df_acc.columns)[i],
+                                 y=df_acc.iloc[:, i], 
+                                 marker_color=c[i]) for i in range(int(len(df_acc.columns)))],)
+    box.update_layout(
+        xaxis_title="Quantifiers",
+        yaxis_title="Accuracy",
+        title="Algorithms accuracy",
+        height=500
+    )
 
     lin = np.linspace(window_size, len(df), len(df_acc), dtype=int)
 
@@ -326,7 +355,7 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     )
     
 
-    return line, box, propline
+    return concept_line, line, box, propline
 
 
 ##################################           RUN           #################################
