@@ -6,24 +6,24 @@ import shutil
 def make_tests(path_tests, dataset, positive_proportions, real_drifts) -> None:
     if not os.path.isdir(f"{path_tests}/{dataset}"):
         os.mkdir(f"{path_tests}/{dataset}")
-    
-    df = pd.read_csv(f"{path_tests}/{dataset}.test.csv")
-    df['class'].replace(2, int(0), inplace=True)
-    
-    
-    size = int(df.iloc[:real_drifts[0]].shape[0])
-    print(size)
-    context1 = df[df['context'] == 1]
-    context2 = df[df['context'] == 2]
+    else:
+        df = pd.read_csv(f"{path_tests}/{dataset}.test.csv")
+        df['class'].replace(2, int(0), inplace=True)
+        
+        
+        size = int(df.iloc[:real_drifts[0]].shape[0])
+        print(size)
+        context1 = df[df['context'] == 1]
+        context2 = df[df['context'] == 2]
 
-    for pos_prop1 in positive_proportions:
-        for pos_prop2 in positive_proportions:
-            c1_sample1, c1_sample2 = create_samples(context1, size, pos_prop1)
-            
-            c2_sample1, c2_sample2 = create_samples(context2, size, pos_prop2)
-            
-            test = pd.concat([c1_sample1, c2_sample1], ignore_index=True)
-            test.to_csv(f"{path_tests}/{dataset}/{pos_prop1}_{pos_prop2}.csv", index=False)
+        for pos_prop1 in positive_proportions:
+            for pos_prop2 in positive_proportions:
+                c1_sample1, c1_sample2 = create_samples(context1, size, pos_prop1)
+                
+                c2_sample1, c2_sample2 = create_samples(context2, size, pos_prop2)
+                
+                test = pd.concat([c1_sample1, c2_sample1], ignore_index=True)
+                test.to_csv(f"{path_tests}/{dataset}/{pos_prop1}_{pos_prop2}.csv", index=False)
     
     
     

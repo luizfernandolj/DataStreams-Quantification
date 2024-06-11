@@ -164,6 +164,11 @@ content = html.Div([
             dcc.Graph(id="box-plot")
         ], width=10)
     ], justify="around", style={"margin-top":"40px"}),
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="line-discrepances")
+        ], width=10)
+    ], justify="around", style={"margin-top":"40px"}),
     
 ], id="page-content", style=CONTENT_STYLE)
 
@@ -246,6 +251,7 @@ def update_sliders_value(dataset):
     Output("line-plot", "figure"),
     Output("box-plot", "figure"),
     Output("proportions-plot", "figure"),
+    Output("line-discrepances", "figure"),
     Input("algorithms-dropdown", "value"),
     Input("win-size-slider", "value"),
     Input("scores-size-slider", "value"),
@@ -262,7 +268,8 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
         line = px.line()
         box = px.box()
         propline = px.line()
-        return concept_line, line, box, propline
+        discrepances = px.line()
+        return concept_line, line, box, propline, discrepances
     
     
     concept_df = pd.read_csv(f"{path_tests}{dataset}/{prop1}_{prop2}.csv")
@@ -295,7 +302,7 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     df_acc = {} 
     for a in df.columns:
         mean_acc = []
-        for i in range(0, len(df), int(size/2)): 
+        for i in range(0, len(df_all_prop), int(size/2)): 
             acc = round(accuracy_score(y_true = real[i:i+int(size)], y_pred = df[a].tolist()[i:i+int(size)]), 2)      
             mean_acc.append(acc) 
         df_acc[a] = mean_acc
@@ -354,8 +361,36 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
         )
     )
     
+    
+    dp = pd.read_csv(f"{path_results}{dataset}_{prop1}_{prop2}_{size}_{score}_discrepances.csv")
+    
+    utils_final = {} 
+    for a in dp.columns:
+        median_d = []
+        for i in range(0, len(dp), int(size/2)): 
+            median =   dp[a].iloc[i:i+int(size)].median()    
+            median_d.append(median) 
+        utils_final[a] = median_d
+    utils_final = pd.DataFrame(utils_final)
+    
+    discrepances_line = px.line(utils_final["baseline_discrepances"], height=500, title="Discrepances of the scores window")
+    discrepances_line.update_layout(
+        xaxis_title="Instances",
+        yaxis_title="Discrepances",
+        xaxis = dict(
+            tickmode = 'array',
+            tickvals = list(range(0, len(df_acc))),
+            ticktext = list(lin),
+            tickangle=-45,
+        )
+    )
+    
+    
+    print(utils_final['baseline_discrepances'].corr(utils_final['dys_distances']))
+    
+    
 
-    return concept_line, line, box, propline
+    return concept_line, line, box, propline, discrepances_line
 
 
 ##################################           RUN           #################################

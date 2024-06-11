@@ -5,6 +5,7 @@ from utils.getTrainingScores import getTrainingScores
 from utils.getTPRFPR import getTPRFPR
 from utils.applyquantifiers import apply_quantifier
 from utils.get_best_thr import get_best_threshold
+from quantification.dys_method import get_dys_distance
 
 class Experiment:
     
@@ -24,6 +25,9 @@ class Experiment:
     def run_stream(self):
         """Simulate a Datastream, running a window and testing the occurrences of drifts. While applying quantification
         """
+        discrepances = []
+        dys_distances = []
+        
         # Starting window
         window = self.trainX.iloc[-self.window_length:].copy(deep=True).reset_index(drop=True)
         window_labels = self.trainY.iloc[-self.window_length:].copy(deep=True).reset_index(drop=True)
@@ -35,7 +39,7 @@ class Experiment:
         
         # Getting the training scores, and the initial things we need to run the quantification methods
         scores, tprfpr, pos_scores, neg_scores = self.get_train_values()
-        test_scores = self.model.predict_proba(self.trainX.iloc[-(self.score_length-1):])[:, 1].tolist()
+        test_scores = self.model.predict_proba(self.trainX.iloc[-(self.score_length):])[:, 1].tolist()
         
         vet_accs = {self.detector_name : []}
         iq = 0
@@ -60,7 +64,7 @@ class Experiment:
             
             # Applying quantification after 10 instances 
             #pdb.set_trace()
-            vet_accs, window_prop = self.apply_quantification(scores,
+            vet_accs, window_prop, dys_distances = self.apply_quantification(scores,
                                                     np.array(test_scores),
                                                     tprfpr,
                                                     pos_scores,
@@ -68,7 +72,12 @@ class Experiment:
                                                     window, 
                                                     new_instance_score, 
                                                     vet_accs,
-                                                    window_prop)
+                                                    window_prop,
+                                                    dys_distances)
+            
+            
+            discrepance = np.round(np.absolute(np.subtract(np.array(test_scores),np.array(real_labels_window))).mean(), 3)
+            discrepances.append(discrepance)
             
             test_scores = test_scores[1:]
             real_labels_window = real_labels_window[1:]
@@ -89,7 +98,7 @@ class Experiment:
                 iq = -1
             iq += 1
     
-        return pd.DataFrame(vet_accs), {self.detector_name:self.drifts}, pd.DataFrame(window_prop)
+        return pd.DataFrame(vet_accs), {self.detector_name:self.drifts}, pd.DataFrame(window_prop), discrepances, dys_distances
     
     def apply_quantification(self,
                              scores: object,
@@ -100,7 +109,8 @@ class Experiment:
                              windowX : object, 
                              new_instance_score : float,
                              vet_accs : dict[str: list[int]],
-                             window_prop : dict[str: list[float]]):
+                             window_prop : dict[str: list[float]],
+                             dys_distances : list[float]):
         """Apply quantification into window, getting the positive scores and fiding the best threshold to classify the new instance
 
         Args:
@@ -111,6 +121,7 @@ class Experiment:
         """
         proportions = {}
         for qtf_method in self.quantifier_methods:
+            
             pred_pos_prop = apply_quantifier(qntMethod=qtf_method,
                                              clf = self.model,
                                              scores=scores['scores'],
@@ -122,6 +133,11 @@ class Experiment:
                                              thr=0.5,
                                              measure="topsoe",
                                              test_data=windowX)
+            if qtf_method  == "DyS":
+                dys_distance = get_dys_distance(pos_scores,
+                                                neg_scores,
+                                                test_scores)
+                dys_distances.append(dys_distance)
             
             window_prop[f"{self.detector_name}-{qtf_method}"].append(round(pred_pos_prop, 2))
             proportions[f"{self.detector_name}-{qtf_method}"] = pred_pos_prop
@@ -134,7 +150,7 @@ class Experiment:
                 vet_accs[name] = []
             # Using the threshold to determine the class of the new instance score
             vet_accs[name].append(1 if new_instance_score >= thr else 0)
-        return vet_accs, window_prop
+        return vet_accs, window_prop, dys_distances
             
             
         

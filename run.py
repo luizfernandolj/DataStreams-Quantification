@@ -59,18 +59,20 @@ def run(dataset, window_size, score_lenght, path_train, path_tests, path_results
         #BASELINE RUN EXPERIMEN
         baseline = Baseline(train, window_size)
         exp = Experiment(train, test, window_size, classifier, baseline, 'baseline', score_lenght)
-        vet_accs_table, drift_points_baseline, window_prop_baseline = make_experiment(exp, contexts, vet_accs_table)
-
+        vet_accs_table, drift_points_baseline, window_prop_baseline, discrepances_baseline, dys_distances_baseline = make_experiment(exp, contexts, vet_accs_table)
         
         # CREATING VARIABLES TO SAVE TO A EXTERNAL FILE
         drift_table = pd.DataFrame({"baseline":drift_points_baseline, "REAL":contexts})
         vet_accs_table["real"] = test.iloc[:, -1].tolist()
         
         
+        discrepances = pd.DataFrame(discrepances_baseline, columns=['baseline_discrepances'])
+        discrepances["dys_distances"] = dys_distances_baseline 
         window_prop = pd.concat([window_prop_baseline], axis=1)
         
         
         # SAVING THE DATAFRAMES INTO FILES FOR EACH DATASET
+        discrepances.to_csv(f"{path_results}/{dataset}_{f[:f.rfind('.')]}_{window_size}_{score_lenght}_discrepances.csv", index=False)
         window_prop.to_csv(f"{path_results}/{dataset}_{f[:f.rfind('.')]}_{window_size}_{score_lenght}_prop.csv", index=False)
         drift_table.to_csv(f"{path_results}/{dataset}_{f[:f.rfind('.')]}_{window_size}_{score_lenght}_drift.csv", index=False)
         vet_accs_table.to_csv(f"{path_results}/{dataset}_{f[:f.rfind('.')]}_{window_size}_{score_lenght}_pred.csv", index=False)
@@ -88,11 +90,11 @@ def make_experiment(experiment_object, contexts, vet_accs_table) -> list:
     Returns:
         list: results of accuracies of predictions and the list of drift predictions
     """
-    vet_accs, drift_points, win_prop = experiment_object.run_stream()
+    vet_accs, drift_points, win_prop, discrepances, dys_distance = experiment_object.run_stream()
     vet_accs_table = pd.concat([vet_accs_table, vet_accs], axis=1)
     drift_points = [1 if x in list(drift_points.values())[0] else 0 for x in range(len(contexts))]
     
-    return vet_accs_table, drift_points, win_prop
+    return vet_accs_table, drift_points, win_prop, discrepances, dys_distance
 
     
     
