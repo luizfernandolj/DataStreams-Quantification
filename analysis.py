@@ -169,6 +169,11 @@ content = html.Div([
             dcc.Graph(id="line-discrepances")
         ], width=10)
     ], justify="around", style={"margin-top":"40px"}),
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="line-dys_distances")
+        ], width=10)
+    ], justify="around", style={"margin-top":"40px"}),
     
 ], id="page-content", style=CONTENT_STYLE)
 
@@ -252,6 +257,7 @@ def update_sliders_value(dataset):
     Output("box-plot", "figure"),
     Output("proportions-plot", "figure"),
     Output("line-discrepances", "figure"),
+    Output("line-dys_distances", "figure"),
     Input("algorithms-dropdown", "value"),
     Input("win-size-slider", "value"),
     Input("scores-size-slider", "value"),
@@ -269,7 +275,8 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
         box = px.box()
         propline = px.line()
         discrepances = px.line()
-        return concept_line, line, box, propline, discrepances
+        dys_distances = px.line()
+        return concept_line, line, box, propline, discrepances, dys_distances
     
     
     concept_df = pd.read_csv(f"{path_tests}{dataset}/{prop1}_{prop2}.csv")
@@ -386,11 +393,27 @@ def update_graph(algorithms, size, score, prop1, prop2, real_prop, dataset):
     )
     
     
-    print(utils_final['baseline_discrepances'].corr(utils_final['dys_distances']))
+    
+    
+    dys_distance_line = px.line(utils_final["dys_distances"], height=500, title="DyS Distance of instances")
+    dys_distance_line.update_layout(
+        xaxis_title="Instances",
+        yaxis_title="DyS Distances",
+        xaxis = dict(
+            tickmode = 'array',
+            tickvals = list(range(0, len(df_acc))),
+            ticktext = list(lin),
+            tickangle=-45,
+        )
+    )
+    
+    
+    
+    #print(utils_final['baseline_discrepances'].corr(utils_final['dys_distances']))
     
     
 
-    return concept_line, line, box, propline, discrepances_line
+    return concept_line, line, box, propline, discrepances_line, dys_distance_line
 
 
 ##################################           RUN           #################################
